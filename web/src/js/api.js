@@ -1,0 +1,1112 @@
+// Thin fetch wrapper shared by all dashboards.
+const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
+const API_BASE = import.meta.env.VITE_API_URL || (isLocalhost ? '/api' : 'https://ci360backend.onrender.com/api');
+
+export function getToken(){ return localStorage.getItem('ci360_token'); }
+export function getUser(){ try{ return JSON.parse(localStorage.getItem('ci360_user')); }catch(e){ return null; } }
+export function setSession(token, user){ localStorage.setItem('ci360_token', token); localStorage.setItem('ci360_user', JSON.stringify(user)); }
+export function clearSession(){ localStorage.removeItem('ci360_token'); localStorage.removeItem('ci360_user'); }
+
+export function requireAuth(expectedRole){
+  const token = getToken();
+  const user = getUser();
+  if(!token || !user){ window.location.href = '/login.html'; return null; }
+  if(expectedRole && user.role !== expectedRole && user.role !== 'superadmin'){
+    window.location.href = user.role === 'superadmin' ? '/admin.html' : (user.role === 'employee' ? '/employee.html' : '/client.html');
+    return null;
+  }
+  return user;
+}
+
+export async function api(path, options={}){
+  const token = getToken();
+  const headers = Object.assign({'Content-Type':'application/json'}, options.headers||{});
+  if(token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(API_BASE + path, Object.assign({}, options, {headers}));
+  if(res.status === 401){ clearSession(); window.location.href = '/login.html'; throw new Error('Session expired'); }
+  let data = null;
+  try{ data = await res.json(); }catch(e){ /* no body or non-JSON body */ }
+  if(!res.ok){ throw new Error((data && data.error) || ('Server status ' + res.status + ' — Backend waking up, please retry in 10s.')); }
+  return data;
+}
+
+export const apiGet    = (path)       => api(path, {method:'GET'});
+export const apiPost   = (path, body) => api(path, {method:'POST',   body: JSON.stringify(body)});
+export const apiPut    = (path, body) => api(path, {method:'PUT',    body: JSON.stringify(body)});
+export const apiPatch  = (path, body) => api(path, {method:'PATCH',  body: JSON.stringify(body)});
+export const apiDelete = (path)       => api(path, {method:'DELETE'});
+
+export function fmtINR(n){ n = Number(n)||0; return '₹' + n.toLocaleString('en-IN', {maximumFractionDigits:0}); }
+export function fmtHours(n){ return (Number(n)||0).toLocaleString('en-IN', {maximumFractionDigits:1}) + ' hrs'; }
+export function escapeHtml(str){ if(str==null) return ''; return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+export function fmtDate(d){ if(!d) return '—'; return new Date(d).toISOString().slice(0,10); }
+
+/* ── THEME MANAGEMENT ───────────────────────────────────────── */
+export function getTheme(){ return localStorage.getItem('ci360_theme') || 'light'; }
+export function setTheme(t){
+  localStorage.setItem('ci360_theme', t);
+  document.documentElement.setAttribute('data-theme', t);
+  // update toggle buttons
+  document.querySelectorAll('.theme-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.theme === t);
+  });
+}
+export function initTheme(){
+  const saved = getTheme();
+  document.documentElement.setAttribute('data-theme', saved);
+}
+
+/* ── TOAST ───────────────────────────────────────────────────── */
+export function flashToast(msg, isError){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.style.borderLeftColor = isError ? 'var(--red-500)' : 'var(--green-500)';
+  t.textContent = (isError ? '⚠️  ' : '✓  ') + msg;
+  document.body.appendChild(t);
+  const remove = () => { t.style.opacity='0'; t.style.transform='translateY(10px)'; setTimeout(()=>t.remove(), 200); };
+  setTimeout(remove, 2800);
+}
+
+/* ── MODAL ───────────────────────────────────────────────────── */
+export function openModal(html){
+  const bg = document.createElement('div');
+  bg.className = 'modal-bg';
+  bg.innerHTML = `<div class="modal">${html}</div>`;
+  bg.onclick = (e)=>{ if(e.target===bg) bg.remove(); };
+  document.body.appendChild(bg);
+  return bg;
+}
+
+export function logout(){ clearSession(); window.location.href = '/login.html'; }
+
+/* ── NOTIFICATION BELL ───────────────────────────────────────── */
+export function renderNotificationBell(){
+  return `
+    <div class="notif-wrapper">
+      <button id="notifBellBtn" type="button" class="notif-bell-btn" title="Notifications" aria-label="Notifications">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        <span id="notifBadge" class="notif-badge" style="display:none">0</span>
+      </button>
+      <div id="notifDropdown" class="notif-dropdown" style="display:none">
+        <div class="notif-dropdown-header">
+          <strong>🔔 Notifications <span id="notifUnreadBadge" style="font-size:11px;font-weight:700;color:var(--brand-500)"></span></strong>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button id="markAllReadBtn" type="button" class="btn ghost small" style="font-size:10.5px;padding:2px 7px;">Mark Read</button>
+            <button id="clearNotifBtn" type="button" class="btn ghost small" style="font-size:10.5px;padding:2px 7px;">Clear</button>
+          </div>
+        </div>
+        <div class="notif-filters">
+          <button type="button" class="notif-filter-btn active" data-filter="all">All</button>
+          <button type="button" class="notif-filter-btn" data-filter="task">✅ Tasks</button>
+          <button type="button" class="notif-filter-btn" data-filter="target">🎯 Targets</button>
+          <button type="button" class="notif-filter-btn" data-filter="job">📋 Jobs</button>
+          <button type="button" class="notif-filter-btn" data-filter="ticket">🎫 Tickets</button>
+        </div>
+        <div class="notif-list" id="notifList">
+          <div class="empty" style="padding:24px 16px;font-size:12.5px;">Loading notifications…</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+export function initNotificationBell(){
+  const bellBtn   = document.getElementById('notifBellBtn');
+  const dropdown  = document.getElementById('notifDropdown');
+  const badge     = document.getElementById('notifBadge');
+  const list      = document.getElementById('notifList');
+  const clearBtn  = document.getElementById('clearNotifBtn');
+  const markReadBtn = document.getElementById('markAllReadBtn');
+  const unreadTxt = document.getElementById('notifUnreadBadge');
+  if(!bellBtn || !dropdown) return;
+
+  let allNotifs = [];
+  let currentFilter = 'all';
+
+  function getNotifIcon(type){
+    if(!type) return '🔔';
+    if(type.startsWith('task_completed')) return '🎉';
+    if(type.startsWith('task_due')) return '⚡';
+    if(type.startsWith('task')) return '✅';
+    if(type.startsWith('target_completed')) return '🎉';
+    if(type.startsWith('target')) return '🎯';
+    if(type.startsWith('job_due')) return '⏳';
+    if(type.startsWith('job')) return '📋';
+    if(type.startsWith('ticket')) return '🎫';
+    if(type.startsWith('status')) return '🔄';
+    return '🔔';
+  }
+
+  function timeAgo(dateStr){
+    if(!dateStr) return '';
+    const d = new Date(dateStr);
+    const now = new Date();
+    const sec = Math.floor((now - d) / 1000);
+    if(sec < 60) return 'Just now';
+    const min = Math.floor(sec / 60);
+    if(min < 60) return `${min}m ago`;
+    const hr = Math.floor(min / 60);
+    if(hr < 24) return `${hr}h ago`;
+    const days = Math.floor(hr / 24);
+    if(days === 1) return 'Yesterday';
+    if(days < 7) return `${days}d ago`;
+    return fmtDate(dateStr);
+  }
+
+  function renderList(){
+    if(!list) return;
+    let filtered = allNotifs;
+    if(currentFilter === 'task') filtered = allNotifs.filter(n => (n.type||'').includes('task'));
+    else if(currentFilter === 'target') filtered = allNotifs.filter(n => (n.type||'').includes('target'));
+    else if(currentFilter === 'job') filtered = allNotifs.filter(n => (n.type||'').includes('job'));
+    else if(currentFilter === 'ticket') filtered = allNotifs.filter(n => (n.type||'').includes('ticket'));
+
+    if(filtered.length === 0){
+      list.innerHTML = `<div class="empty" style="padding:28px 16px;font-size:12.5px;color:var(--text-4)">No ${currentFilter==='all'?'':currentFilter+' '}notifications</div>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map(n => {
+      const icon = getNotifIcon(n.type);
+      return `
+        <div class="notif-item ${n.read ? '' : 'unread'}" data-id="${n._id}" data-type="${escapeHtml(n.type||'')}">
+          <div class="notif-icon">${icon}</div>
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:2px">
+              <span style="font-weight:700;font-size:12.5px;color:var(--text-1);line-height:1.3">${escapeHtml(n.title)}</span>
+              <span style="font-size:10.5px;color:var(--text-4);white-space:nowrap">${timeAgo(n.createdAt)}</span>
+            </div>
+            <div style="font-size:12px;color:var(--text-3);line-height:1.4">${escapeHtml(n.message)}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    list.querySelectorAll('.notif-item').forEach(item => {
+      item.onclick = async () => {
+        const id = item.dataset.id;
+        const type = item.dataset.type;
+        if(id && item.classList.contains('unread')){
+          item.classList.remove('unread');
+          try { await api(`/notifications/${id}/read`, { method: 'PATCH' }); } catch(e){}
+        }
+        if(type && type.includes('task') && typeof window.ci360NavTab === 'function') {
+          dropdown.style.display = 'none';
+          window.ci360NavTab('dailytasks');
+        }
+      };
+    });
+  }
+
+  async function fetchNotifications(){
+    try{
+      const data = await apiGet('/notifications');
+      allNotifs = data.notifications || [];
+      const unread = data.unreadCount || 0;
+      badge.textContent = unread > 99 ? '99+' : unread;
+      badge.style.display = unread > 0 ? 'flex' : 'none';
+      if(unreadTxt) unreadTxt.textContent = unread > 0 ? `(${unread} new)` : '';
+      renderList();
+    }catch(e){
+      if(list && allNotifs.length === 0) list.innerHTML = `<div style="padding:16px;color:var(--s-red-text);font-size:12px">Could not load notifications</div>`;
+    }
+  }
+
+  fetchNotifications();
+  // Live auto-polling every 25 seconds
+  const pollInterval = setInterval(fetchNotifications, 25000);
+  window.addEventListener('beforeunload', () => clearInterval(pollInterval));
+
+  // Filter chips
+  dropdown.querySelectorAll('.notif-filter-btn').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      dropdown.querySelectorAll('.notif-filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFilter = btn.dataset.filter;
+      renderList();
+    };
+  });
+
+  bellBtn.onclick = (e)=>{
+    e.stopPropagation();
+    const showing = dropdown.style.display === 'block';
+    dropdown.style.display = showing ? 'none' : 'block';
+    if(!showing){
+      fetchNotifications();
+    }
+  };
+
+  if(markReadBtn){
+    markReadBtn.onclick = async (e) => {
+      e.stopPropagation();
+      try {
+        await api('/notifications/read', { method: 'PATCH' });
+        badge.style.display = 'none';
+        if(unreadTxt) unreadTxt.textContent = '';
+        allNotifs.forEach(n => n.read = true);
+        renderList();
+        flashToast('All notifications marked as read');
+      } catch(err){ flashToast(err.message, true); }
+    };
+  }
+
+  document.addEventListener('click', (e)=>{
+    if(!dropdown.contains(e.target) && e.target !== bellBtn) dropdown.style.display='none';
+  });
+
+  if(clearBtn){
+    clearBtn.onclick = async(e)=>{
+      e.stopPropagation();
+      try{
+        await apiDelete('/notifications');
+        allNotifs = [];
+        list.innerHTML = `<div class="empty" style="padding:28px 16px;font-size:12.5px;color:var(--text-4)">No notifications yet</div>`;
+        badge.style.display='none';
+        if(unreadTxt) unreadTxt.textContent = '';
+        flashToast('Notifications cleared');
+      }catch(err){ flashToast(err.message, true); }
+    };
+  }
+}
+
+/* ── APP SHELL ───────────────────────────────────────────────── */
+export function renderAppShell({ user, currentRole, activeTab, tabs, title, subtitle }){
+  const initial = user && user.name ? user.name.charAt(0).toUpperCase() : 'U';
+
+  return `
+    <div class="app-shell">
+      <div class="sidebar-overlay" id="sidebarOverlay"></div>
+      <aside class="app-sidebar" id="appSidebar">
+        <div class="sidebar-brand">
+          <img src="/logo.png" alt="CI360 Logo" class="brand-logo-img">
+          <div class="brand-info">
+            <h1>CI360</h1>
+            <div class="tag">Intelligence Suite</div>
+          </div>
+        </div>
+        <nav class="sidebar-nav" role="navigation" aria-label="Main navigation">
+          <div class="nav-group-label">Navigation</div>
+          ${tabs.map(t=>`
+            <button type="button" class="sidebar-item ${activeTab===t.key?'active':''}" data-tab="${t.key}" aria-current="${activeTab===t.key?'page':'false'}">
+              <span class="icon">${t.icon||'📌'}</span>
+              <span>${t.label}</span>
+            </button>`).join('')}
+        </nav>
+        <div class="sidebar-user">
+          <div class="user-avatar">${initial}</div>
+          <div class="user-details">
+            <div class="name">${escapeHtml(user ? user.name : 'User')}</div>
+            <div class="role">${escapeHtml(user ? (user.role === 'superadmin' ? 'Admin' : user.role) : '')}</div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="app-main" role="main">
+        <header class="app-topbar">
+          <div class="topbar-left">
+            <button type="button" class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open navigation">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div>
+              <div class="page-heading-title">${escapeHtml(title || 'Dashboard')}</div>
+              ${subtitle ? `<div style="font-size:11.5px;color:var(--text-4);margin-top:1px">${escapeHtml(subtitle)}</div>` : ''}
+            </div>
+          </div>
+          <div class="topbar-right">
+            <div class="theme-toggle-wrap">
+              <button class="theme-btn ${getTheme()==='light'?'active':''}" data-theme="light" onclick="window.__setTheme('light')" title="Light mode" type="button">☀️</button>
+              <button class="theme-btn ${getTheme()==='dark'?'active':''}" data-theme="dark" onclick="window.__setTheme('dark')" title="Dark mode" type="button">🌙</button>
+            </div>
+            ${renderNotificationBell()}
+            <button type="button" class="logout-btn-header" id="logoutBtn">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              Log out
+            </button>
+          </div>
+        </header>
+        <div class="app-content">
+          <div id="content"></div>
+        </div>
+      </main>
+    </div>`;
+}
+
+export function bindAppShellEvents(onTabChange){
+  // Mobile nav
+  const mobileToggle = document.getElementById('mobileNavToggle');
+  const sidebar      = document.getElementById('appSidebar');
+  const overlay      = document.getElementById('sidebarOverlay');
+
+  function openSidebar(){
+    if(sidebar) sidebar.classList.add('open');
+    if(overlay) overlay.classList.add('open');
+  }
+  function closeSidebar(){
+    if(sidebar) sidebar.classList.remove('open');
+    if(overlay) overlay.classList.remove('open');
+  }
+
+  if(mobileToggle) mobileToggle.onclick = openSidebar;
+  if(overlay) overlay.onclick = closeSidebar;
+
+  // Logout
+  const logoutBtn = document.getElementById('logoutBtn');
+  if(logoutBtn) logoutBtn.onclick = logout;
+
+  // Init notifications
+  initNotificationBell();
+
+  // Tab navigation
+  document.querySelectorAll('.sidebar-item').forEach(btn=>{
+    btn.onclick = ()=>{
+      closeSidebar();
+      if(onTabChange) onTabChange(btn.dataset.tab);
+    };
+  });
+}
+
+/* ── SKELETON LOADERS ────────────────────────────────────────── */
+export function renderSkeletonCards(count=4){
+  return `
+    <div class="grid grid-${Math.min(count,4)}" style="margin-bottom:24px">
+      ${Array(count).fill(0).map(()=>`
+        <div class="card kpi">
+          <div class="skeleton-box" style="height:12px;width:55%;margin-bottom:14px;border-radius:4px"></div>
+          <div class="skeleton-box" style="height:30px;width:40%;margin-bottom:10px;border-radius:6px"></div>
+          <div class="skeleton-box" style="height:11px;width:75%;border-radius:4px"></div>
+        </div>`).join('')}
+    </div>`;
+}
+
+/* ── EMPTY STATE ─────────────────────────────────────────────── */
+export function renderEmptyState(title, subtitle, icon='📁', actionBtn=''){
+  return `
+    <div class="empty">
+      <span class="empty-icon">${icon}</span>
+      <h3>${escapeHtml(title)}</h3>
+      <p>${escapeHtml(subtitle)}</p>
+      ${actionBtn}
+    </div>`;
+}
+
+/* ── KPI CARD ────────────────────────────────────────────────── */
+export function renderKpiCard(title, value, subtext='', icon='📊', trend=''){
+  let trendHtml = '';
+  if(trend){
+    const isUp = trend.startsWith('+') || trend.includes('↑') || trend.toLowerCase().includes('up');
+    trendHtml = `<span class="kpi-trend ${isUp?'up':'down'}">${escapeHtml(trend)}</span>`;
+  }
+  return `
+    <div class="card kpi">
+      <div class="kpi-header">
+        <span class="kpi-label">${escapeHtml(title)}</span>
+        <div class="kpi-icon">${icon}</div>
+      </div>
+      <div class="kpi-value">${escapeHtml(value)}</div>
+      <div class="kpi-sub">${trendHtml}<span>${escapeHtml(subtext)}</span></div>
+    </div>`;
+}
+
+export function renderBadge(text, type='gray'){
+  return `<span class="badge ${type}">${escapeHtml(text)}</span>`;
+}
+
+export function renderProgressBar(pct, type='indigo'){
+  const percent = Math.min(100, Math.max(0, Number(pct)||0));
+  return `
+    <div class="progress-bar-wrap" title="${percent.toFixed(0)}%">
+      <div class="progress-bar-fill ${type}" style="width:${percent}%"></div>
+    </div>`;
+}
+
+/* ── PERIOD PICKER ───────────────────────────────────────────── */
+export function renderPeriodPicker(currentPeriod){
+  const periods = [['all','All Time'],['today','Today'],['week','This Week'],['month','This Month'],['quarter','This Quarter']];
+  return `<div class="period-row">${periods.map(([k,l])=>`<button class="pchip ${currentPeriod===k?'active':''}" data-period="${k}">${l}</button>`).join('')}</div>`;
+}
+
+/* ── SUPPORT TICKET HELPERS ──────────────────────────────────── */
+
+function getInitials(name) {
+  if (!name) return 'U';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function timeAgo(date) {
+  if (!date) return '';
+  const now = new Date();
+  const past = new Date(date);
+  const diffSec = Math.floor((now - past) / 1000);
+  if (diffSec < 60) return 'Just now';
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  if (diffDay < 7) return `${diffDay}d ago`;
+  return fmtDate(date);
+}
+
+/* ── FILE ATTACHMENTS & UPLOADER UTILITIES ──────────────────── */
+export function fmtFileSize(bytes) {
+  bytes = Number(bytes) || 0;
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+}
+
+export function getFileCategory(name = '', type = '') {
+  const ext = (name.split('.').pop() || '').toLowerCase();
+  if (['png','jpg','jpeg','gif','webp','svg','bmp','ico'].includes(ext) || type.startsWith('image/')) return { icon: '🖼️', cls: 'img', label: 'Image' };
+  if (ext === 'pdf' || type === 'application/pdf') return { icon: '📄', cls: 'pdf', label: 'PDF Document' };
+  if (['doc','docx','odt','txt','rtf'].includes(ext)) return { icon: '📝', cls: 'doc', label: 'Document' };
+  if (['xls','xlsx','csv','ods'].includes(ext)) return { icon: '📊', cls: 'sheet', label: 'Spreadsheet' };
+  if (['zip','rar','7z','tar','gz'].includes(ext)) return { icon: '📦', cls: 'zip', label: 'Archive' };
+  if (['mp4','mov','avi','mkv','webm'].includes(ext) || type.startsWith('video/')) return { icon: '🎬', cls: 'video', label: 'Video' };
+  if (['mp3','wav','ogg','m4a'].includes(ext) || type.startsWith('audio/')) return { icon: '🎵', cls: 'audio', label: 'Audio' };
+  return { icon: '📎', cls: 'other', label: 'File' };
+}
+
+export function isImageAttachment(att) {
+  if (!att) return false;
+  const cat = getFileCategory(att.name || att.filename || '', att.type || '');
+  return cat.cls === 'img';
+}
+
+export function openFilePreviewModal(att) {
+  if (!att || !att.url) return;
+  const cat = getFileCategory(att.name, att.type);
+  const isImg = cat.cls === 'img';
+  const isPdf = cat.cls === 'pdf';
+  const fileName = escapeHtml(att.name || 'Attachment');
+  const fileSize = fmtFileSize(att.size);
+
+  const modal = document.createElement('div');
+  modal.className = 'preview-modal-overlay';
+  modal.innerHTML = `
+    <div class="preview-modal-card">
+      <div class="preview-modal-header">
+        <div class="preview-modal-title">
+          <span>${cat.icon}</span>
+          <span>${fileName}</span>
+          <span style="font-size:11px;font-weight:500;color:var(--text-4)">(${fileSize})</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <a href="${att.url}" download="${fileName}" target="_blank" class="btn ghost small" style="font-size:12px;padding:4px 10px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download
+          </a>
+          <button type="button" class="btn ghost small preview-modal-close" style="padding:4px 8px;font-size:14px">✕</button>
+        </div>
+      </div>
+      <div class="preview-modal-body">
+        ${isImg ? `
+          <img src="${att.url}" alt="${fileName}" style="max-height:72vh;object-fit:contain;cursor:zoom-in" onclick="window.open('${att.url}','_blank')">
+        ` : (isPdf ? `
+          <iframe src="${att.url}" title="${fileName}"></iframe>
+        ` : `
+          <div style="text-align:center;padding:40px 20px">
+            <div style="font-size:48px;margin-bottom:12px">${cat.icon}</div>
+            <div style="font-size:15px;font-weight:700;color:var(--text-1);margin-bottom:6px">${fileName}</div>
+            <div style="font-size:12.5px;color:var(--text-3);margin-bottom:18px">${cat.label} · ${fileSize}</div>
+            <a href="${att.url}" download="${fileName}" target="_blank" class="btn gold">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Download Attachment
+            </a>
+          </div>
+        `)}
+      </div>
+    </div>
+  `;
+
+  modal.onclick = (e) => {
+    if (e.target === modal || e.target.closest('.preview-modal-close')) {
+      modal.remove();
+    }
+  };
+  document.body.appendChild(modal);
+}
+
+export function renderAttachmentChips(attachments = [], options = {}) {
+  if (!attachments || !attachments.length) return '';
+  const canDelete = !!options.canDelete;
+
+  return `
+    <div class="attachment-chips-wrap">
+      ${options.title ? `<div class="attachment-chips-header">📎 ${escapeHtml(options.title)} <span style="font-weight:500;color:var(--text-4)">(${attachments.length})</span></div>` : ''}
+      <div class="attachment-chips-list">
+        ${attachments.map((att, idx) => {
+          const cat = getFileCategory(att.name, att.type);
+          const name = escapeHtml(att.name || 'File');
+          const size = fmtFileSize(att.size);
+          return `
+            <div class="attachment-chip" data-idx="${idx}" title="${name} (${size})">
+              <span class="file-type-icon ${cat.cls}" style="width:22px;height:22px;font-size:12px">${cat.icon}</span>
+              <span class="attachment-chip-name" onclick="window.__openPreview(${idx}, this)">${name}</span>
+              <span class="attachment-chip-size">${size}</span>
+              <div class="attachment-chip-actions">
+                <button type="button" class="attachment-chip-btn" title="View Preview" onclick="window.__openPreview(${idx}, this)">👁️</button>
+                <a href="${att.url}" download="${name}" target="_blank" class="attachment-chip-btn" title="Download" onclick="event.stopPropagation()">⬇️</a>
+                ${canDelete ? `<button type="button" class="attachment-chip-btn" title="Remove" style="color:var(--red-500)" onclick="window.__removeChip(${idx}, this)">✕</button>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// Global state container for file uploaders
+const uploaderStores = {};
+
+export async function uploadFilesToServer(fileList) {
+  const files = Array.from(fileList || []);
+  if (!files.length) return [];
+
+  const prepared = await Promise.all(files.map(async (file) => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve({
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          base64: reader.result,
+          data: reader.result
+        });
+      };
+      reader.onerror = () => resolve(null);
+      reader.readAsDataURL(file);
+    });
+  }));
+
+  const valid = prepared.filter(Boolean);
+  if (!valid.length) return [];
+
+  try {
+    const res = await apiPost('/upload', { files: valid });
+    if (res && res.files && res.files.length) {
+      return res.files;
+    }
+  } catch (err) {
+    console.warn('Backend upload failed, fallback to base64 data URLs:', err);
+  }
+
+  // Fallback to data URI attachment object if upload endpoint failed
+  return valid.map(f => ({
+    name: f.name,
+    url: f.base64,
+    size: f.size,
+    type: f.type,
+    uploadedAt: new Date()
+  }));
+}
+
+export function renderAttachmentUploader({
+  id = 'uploader',
+  label = 'Attachments & Files',
+  subtitle = 'Upload briefs, proofs, PDFs, spreadsheets, screenshots or design assets',
+  multiple = true,
+  accept = '*/*',
+  maxFiles = 10
+} = {}) {
+  return `
+    <div class="uploader-container" id="container-${id}">
+      <label style="font-size:12.5px;font-weight:700;color:var(--text-2);display:flex;align-items:center;justify-content:space-between">
+        <span>📎 ${escapeHtml(label)}</span>
+        <span style="font-size:11px;font-weight:500;color:var(--text-4)" id="count-${id}">0 files attached</span>
+      </label>
+      <div class="uploader-zone" id="zone-${id}">
+        <input type="file" id="input-${id}" ${multiple ? 'multiple' : ''} accept="${accept}" style="display:none">
+        <div class="uploader-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <div class="uploader-title">Click to upload or drag &amp; drop files here</div>
+        <div class="uploader-subtitle">${escapeHtml(subtitle)}</div>
+        <button type="button" class="uploader-browse-btn" onclick="document.getElementById('input-${id}').click()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          Browse Local Files
+        </button>
+      </div>
+      <div class="uploader-file-list" id="list-${id}"></div>
+    </div>
+  `;
+}
+
+export function bindAttachmentUploader(id, options = {}) {
+  const zone = document.getElementById('zone-' + id);
+  const input = document.getElementById('input-' + id);
+  const list = document.getElementById('list-' + id);
+  const countEl = document.getElementById('count-' + id);
+
+  uploaderStores[id] = options.existing ? [...options.existing] : [];
+
+  function updateListUI() {
+    const files = uploaderStores[id] || [];
+    if (countEl) countEl.textContent = `${files.length} file${files.length === 1 ? '' : 's'} attached`;
+
+    if (!list) return;
+    if (!files.length) {
+      list.innerHTML = '';
+      return;
+    }
+
+    list.innerHTML = files.map((f, idx) => {
+      const cat = getFileCategory(f.name, f.type);
+      const name = escapeHtml(f.name || 'File');
+      const size = fmtFileSize(f.size);
+      return `
+        <div class="uploader-file-item">
+          <div class="uploader-file-info">
+            <span class="file-type-icon ${cat.cls}">${cat.icon}</span>
+            <div style="min-width:0;flex:1">
+              <div class="uploader-file-name" title="${name}">${name}</div>
+              <div class="uploader-file-size">${cat.label} · ${size}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button type="button" class="btn ghost small" style="padding:3px 8px;font-size:11px" onclick="window.__previewUploaderFile('${id}', ${idx})">Preview</button>
+            <button type="button" class="uploader-file-del" title="Remove file" onclick="window.__removeUploaderFile('${id}', ${idx})">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    if (options.onChange) options.onChange(files);
+  }
+
+  window.__removeUploaderFile = (storeId, idx) => {
+    if (uploaderStores[storeId]) {
+      uploaderStores[storeId].splice(idx, 1);
+      const updater = window[`__update_${storeId}`];
+      if (updater) updater();
+    }
+  };
+
+  window.__previewUploaderFile = (storeId, idx) => {
+    const file = (uploaderStores[storeId] || [])[idx];
+    if (file) openFilePreviewModal(file);
+  };
+
+  window[`__update_${id}`] = updateListUI;
+
+  if (zone && input) {
+    zone.onclick = (e) => {
+      if (e.target.tagName !== 'BUTTON' && !e.target.closest('button')) {
+        input.click();
+      }
+    };
+
+    zone.ondragover = (e) => { e.preventDefault(); zone.classList.add('dragover'); };
+    zone.ondragleave = () => zone.classList.remove('dragover');
+    zone.ondrop = async (e) => {
+      e.preventDefault();
+      zone.classList.remove('dragover');
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+        flashToast('Uploading files… ⏳');
+        const uploaded = await uploadFilesToServer(e.dataTransfer.files);
+        uploaderStores[id] = [...(uploaderStores[id] || []), ...uploaded];
+        updateListUI();
+        flashToast('Files attached! ✓');
+      }
+    };
+
+    input.onchange = async () => {
+      if (input.files && input.files.length) {
+        flashToast('Uploading files… ⏳');
+        const uploaded = await uploadFilesToServer(input.files);
+        uploaderStores[id] = [...(uploaderStores[id] || []), ...uploaded];
+        updateListUI();
+        flashToast('Files attached! ✓');
+        input.value = '';
+      }
+    };
+  }
+
+  updateListUI();
+}
+
+export function getUploaderAttachments(id) {
+  return uploaderStores[id] || [];
+}
+
+export function setUploaderAttachments(id, files = []) {
+  uploaderStores[id] = [...files];
+  const updater = window[`__update_${id}`];
+  if (updater) updater();
+}
+
+// Global preview & chip remove helpers
+window.__openPreview = (idx, el) => {
+  const container = el.closest('.attachment-chips-wrap');
+  if (!container) return;
+  const chip = el.closest('.attachment-chip');
+  if (!chip) return;
+  const chipIdx = Number(chip.dataset.idx);
+  const jsonStr = container.dataset.attachments;
+  if (jsonStr) {
+    try {
+      const arr = JSON.parse(decodeURIComponent(jsonStr));
+      if (arr[chipIdx]) openFilePreviewModal(arr[chipIdx]);
+    } catch (e) {}
+  }
+};
+
+/* ── SUPPORT TICKETS ENHANCED WITH ATTACHMENTS ──────────────── */
+export function renderSupportTicketSection(jobId, isAdmin = false) {
+  const safeid = jobId.replace(/[^a-z0-9]/gi, '');
+  return `
+    <div class="ticket-section" id="tksec-${safeid}">
+      <div class="ticket-section-header">
+        <div class="ticket-section-title">
+          <span style="font-size:14px">🎫</span>
+          <span>Support &amp; Feedback</span>
+          <span class="ticket-count-pill" id="tkcnt-${safeid}">0</span>
+        </div>
+        <button type="button" class="btn ghost small ticket-toggle-btn" data-jobid="${jobId}" data-safeid="${safeid}">
+          + Raise Ticket
+        </button>
+      </div>
+
+      <div class="ticket-create-form" id="tkform-${safeid}">
+        <div class="form-grid-2">
+          <div class="field">
+            <label>Subject / Issue *</label>
+            <input type="text" id="tksub-${safeid}" placeholder="e.g. Revision required for Instagram Reel" />
+          </div>
+          <div class="field">
+            <label>Priority</label>
+            <select id="tkpri-${safeid}">
+              <option value="Medium" selected>🟡 Medium</option>
+              <option value="Low">🟢 Low</option>
+              <option value="High">🟠 High</option>
+              <option value="Urgent">🔴 Urgent</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="margin-bottom:10px">
+          <label>Detailed Description *</label>
+          <textarea id="tkmsg-${safeid}" rows="3" placeholder="Provide full details, feedback, or blockers so the team can resolve it quickly…"></textarea>
+        </div>
+        ${renderAttachmentUploader({ id: 'tkup-' + safeid, label: 'Attach Screenshots or Reference Files', subtitle: 'Upload screenshots, mockups, briefs, or error logs' })}
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:12px">
+          <button type="button" class="btn ghost small tk-cancel-btn" data-safeid="${safeid}">Cancel</button>
+          <button type="button" class="btn gold small tk-submit-btn" data-jobid="${jobId}" data-safeid="${safeid}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Submit Ticket
+          </button>
+        </div>
+      </div>
+
+      <div class="ticket-list" id="tklist-${safeid}">
+        <div style="font-size:12px;color:var(--text-4);padding:8px 0;display:flex;align-items:center;gap:6px">
+          <span class="pulse-dot"></span> Loading tickets…
+        </div>
+      </div>
+    </div>`;
+}
+
+const TICKET_STATUS_BADGE = { 'Open':'red', 'In Review':'amber', 'Resolved':'green', 'Closed':'gray' };
+const TICKET_PRI_BADGE    = { 'Low':'green', 'Medium':'gray', 'High':'amber', 'Urgent':'red' };
+
+function ticketCardHtml(t, isAdmin) {
+  const statusSlug = (t.status || 'Open').toLowerCase().replace(' ','-');
+  const isOpen = t.status === 'Open';
+  const shortId = (t._id || '').slice(-4).toUpperCase();
+  const initials = getInitials(t.userName);
+  const attachmentsJson = encodeURIComponent(JSON.stringify(t.attachments || []));
+  const adminAttachmentsJson = encodeURIComponent(JSON.stringify(t.adminAttachments || []));
+
+  return `
+    <div class="ticket-card status-${statusSlug}" id="tkcard-${t._id}">
+      <div class="ticket-card-header">
+        <div>
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            <span class="ticket-id-tag">#TK-${shortId}</span>
+            <span class="ticket-subject">${escapeHtml(t.subject)}</span>
+          </div>
+        </div>
+        <div class="ticket-meta-badges">
+          <span class="badge ${TICKET_STATUS_BADGE[t.status]||'gray'}">
+            ${isOpen ? '<span class="pulse-dot"></span>' : ''} ${escapeHtml(t.status)}
+          </span>
+          <span class="badge ${TICKET_PRI_BADGE[t.priority]||'gray'}">${escapeHtml(t.priority)}</span>
+        </div>
+      </div>
+
+      <div class="ticket-author-row">
+        <div class="ticket-avatar">${initials}</div>
+        <div class="ticket-author-meta">
+          <div class="ticket-author-name">
+            ${escapeHtml(t.userName)}
+            <span class="ticket-role-pill">${escapeHtml(t.userRole)}</span>
+          </div>
+          <span class="ticket-time-ago">${timeAgo(t.createdAt)} · ${fmtDate(t.createdAt)}</span>
+        </div>
+      </div>
+
+      <div class="ticket-message-box">${escapeHtml(t.message)}</div>
+
+      ${t.attachments && t.attachments.length ? `
+        <div data-attachments="${attachmentsJson}">
+          ${renderAttachmentChips(t.attachments, { title: 'Ticket Attachments' })}
+        </div>
+      ` : ''}
+
+      ${t.adminReply ? `
+        <div class="ticket-thread-wrap">
+          <div class="ticket-admin-reply-card">
+            <div class="ticket-admin-reply-header">
+              <span class="ticket-shield-badge">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                Support Team Response
+              </span>
+              ${t.repliedAt ? `<span style="font-size:11px;color:var(--text-4)">${timeAgo(t.repliedAt)}</span>` : ''}
+            </div>
+            <div class="ticket-admin-reply-text">${escapeHtml(t.adminReply)}</div>
+            ${t.adminAttachments && t.adminAttachments.length ? `
+              <div data-attachments="${adminAttachmentsJson}">
+                ${renderAttachmentChips(t.adminAttachments, { title: 'Support Attached Files' })}
+              </div>
+            ` : ''}
+          </div>
+        </div>` : ''}
+
+      ${isAdmin ? `
+        <div class="ticket-toolbar">
+          <label style="font-size:11px;font-weight:700;color:var(--text-4);text-transform:uppercase">Status:</label>
+          <select class="tk-status-sel" data-tkid="${t._id}" style="font-size:12px;padding:5px 8px;border:1px solid var(--border-sm);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-1)">
+            <option value="Open" ${t.status==='Open'?'selected':''}>🔴 Open</option>
+            <option value="In Review" ${t.status==='In Review'?'selected':''}>🟡 In Review</option>
+            <option value="Resolved" ${t.status==='Resolved'?'selected':''}>🟢 Resolved</option>
+            <option value="Closed" ${t.status==='Closed'?'selected':''}>⚪ Closed</option>
+          </select>
+
+          <button class="btn ghost small tk-reply-toggle" data-tkid="${t._id}" type="button">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            ${t.adminReply ? 'Edit Reply' : '💬 Reply'}
+          </button>
+
+          ${t.status !== 'Resolved' ? `
+            <button class="btn ghost small tk-quick-resolve-btn" data-tkid="${t._id}" type="button" style="color:var(--green-600);border-color:var(--green-400)">
+              ✓ Quick Resolve
+            </button>` : ''}
+
+          <button class="btn danger small tk-del-btn" data-tkid="${t._id}" type="button" style="margin-left:auto;padding:3px 8px;font-size:11px">Delete</button>
+
+          <div class="ticket-reply-form" id="tkreplyform-${t._id}">
+            <div class="ticket-templates-bar">
+              <span style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;align-self:center">Quick:</span>
+              <button type="button" class="ticket-template-btn" data-tkid="${t._id}" data-tpl="We are actively investigating this and will update you shortly.">🔍 Investigating</button>
+              <button type="button" class="ticket-template-btn" data-tkid="${t._id}" data-tpl="This issue has been resolved and the updates have been saved.">✅ Resolved</button>
+              <button type="button" class="ticket-template-btn" data-tkid="${t._id}" data-tpl="Could you please provide more details so we can assist further?">ℹ️ Need Info</button>
+            </div>
+            <textarea id="tkreplytxt-${t._id}" rows="2" placeholder="Write response to ticket..." style="font-size:13px;padding:8px 10px;border:1px solid var(--border-sm);border-radius:var(--r-sm);background:var(--bg-surface);color:var(--text-1);resize:vertical;width:100%;box-sizing:border-box">${escapeHtml(t.adminReply||'')}</textarea>
+            ${renderAttachmentUploader({ id: 'tkreplyup-' + t._id, label: 'Attach Response Files / Deliverables', subtitle: 'Upload updated files, receipts, or resolution proofs' })}
+            <div style="display:flex;justify-content:flex-end;gap:6px;margin-top:8px">
+              <button class="btn ghost small tk-reply-cancel" data-tkid="${t._id}" type="button">Cancel</button>
+              <button class="btn gold small tk-reply-save" data-tkid="${t._id}" type="button">Save Response</button>
+            </div>
+          </div>
+        </div>` : ''}
+    </div>`;
+}
+
+async function loadTicketList(jobId, safeid, isAdmin) {
+  const list = document.getElementById('tklist-' + safeid);
+  const countPill = document.getElementById('tkcnt-' + safeid);
+  if (!list) return;
+  try {
+    const tickets = await apiGet('/tickets/job/' + jobId);
+    if (countPill) countPill.textContent = tickets.length;
+    if (!tickets.length) {
+      list.innerHTML = `<div style="font-size:12px;color:var(--text-4);padding:8px 0;font-style:italic">No tickets on this job yet.</div>`;
+    } else {
+      list.innerHTML = tickets.map(t => ticketCardHtml(t, isAdmin)).join('');
+      bindTicketListEvents(jobId, safeid, isAdmin, list, tickets);
+    }
+  } catch (e) {
+    list.innerHTML = `<div style="font-size:12px;color:var(--s-red-text)">Could not load tickets.</div>`;
+  }
+}
+
+function bindTicketListEvents(jobId, safeid, isAdmin, list, tickets) {
+  if (!isAdmin) return;
+  // Status change
+  list.querySelectorAll('.tk-status-sel').forEach(sel => {
+    sel.onchange = async () => {
+      try {
+        await apiPut('/tickets/' + sel.dataset.tkid, { status: sel.value });
+        flashToast('Status updated');
+        loadTicketList(jobId, safeid, isAdmin);
+      } catch (err) { flashToast(err.message, true); }
+    };
+  });
+
+  // Quick Resolve
+  list.querySelectorAll('.tk-quick-resolve-btn').forEach(btn => {
+    btn.onclick = async () => {
+      try {
+        await apiPut('/tickets/' + btn.dataset.tkid, { status: 'Resolved' });
+        flashToast('Ticket marked as Resolved! 🎉');
+        loadTicketList(jobId, safeid, isAdmin);
+      } catch (err) { flashToast(err.message, true); }
+    };
+  });
+
+  // Template clicks
+  list.querySelectorAll('.ticket-template-btn').forEach(btn => {
+    btn.onclick = () => {
+      const txt = document.getElementById('tkreplytxt-' + btn.dataset.tkid);
+      if (txt) {
+        txt.value = btn.dataset.tpl;
+        txt.focus();
+      }
+    };
+  });
+
+  // Reply toggle
+  list.querySelectorAll('.tk-reply-toggle').forEach(btn => {
+    btn.onclick = () => {
+      const tkid = btn.dataset.tkid;
+      const form = document.getElementById('tkreplyform-' + tkid);
+      if (form) {
+        form.classList.toggle('show');
+        const tkObj = tickets.find(t => t._id === tkid);
+        bindAttachmentUploader('tkreplyup-' + tkid, { existing: tkObj ? tkObj.adminAttachments : [] });
+      }
+    };
+  });
+
+  // Reply cancel
+  list.querySelectorAll('.tk-reply-cancel').forEach(btn => {
+    btn.onclick = () => {
+      const form = document.getElementById('tkreplyform-' + btn.dataset.tkid);
+      if (form) form.classList.remove('show');
+    };
+  });
+
+  // Reply save
+  list.querySelectorAll('.tk-reply-save').forEach(btn => {
+    btn.onclick = async () => {
+      const tkid = btn.dataset.tkid;
+      const txt = document.getElementById('tkreplytxt-' + tkid);
+      if (!txt) return;
+      const adminAttachments = getUploaderAttachments('tkreplyup-' + tkid);
+      try {
+        await apiPut('/tickets/' + tkid, { adminReply: txt.value.trim(), adminAttachments });
+        flashToast('Response saved! 🛡️');
+        loadTicketList(jobId, safeid, isAdmin);
+      } catch (err) { flashToast(err.message, true); }
+    };
+  });
+
+  // Delete
+  list.querySelectorAll('.tk-del-btn').forEach(btn => {
+    btn.onclick = async () => {
+      if (!confirm('Permanently delete this ticket?')) return;
+      try {
+        await apiDelete('/tickets/' + btn.dataset.tkid);
+        flashToast('Ticket deleted');
+        loadTicketList(jobId, safeid, isAdmin);
+      } catch (err) { flashToast(err.message, true); }
+    };
+  });
+}
+
+/**
+ * Bind all ticket interactions for a job card after rendering.
+ */
+export function bindSupportTicketSection(jobId, isAdmin = false) {
+  const safeid = jobId.replace(/[^a-z0-9]/gi, '');
+
+  // Load existing tickets immediately
+  loadTicketList(jobId, safeid, isAdmin);
+
+  // Bind uploader for raising tickets
+  bindAttachmentUploader('tkup-' + safeid);
+
+  // Toggle form
+  const toggleBtn = document.querySelector(`[data-jobid="${jobId}"].ticket-toggle-btn`);
+  if (toggleBtn) {
+    toggleBtn.onclick = () => {
+      const form = document.getElementById('tkform-' + safeid);
+      if (!form) return;
+      const showing = form.style.display === 'block';
+      form.style.display = showing ? 'none' : 'block';
+      toggleBtn.textContent = showing ? '+ Raise Ticket' : '✕ Cancel';
+    };
+  }
+
+  // Cancel form
+  const cancelBtn = document.querySelector(`.tk-cancel-btn[data-safeid="${safeid}"]`);
+  if (cancelBtn) {
+    cancelBtn.onclick = () => {
+      const form = document.getElementById('tkform-' + safeid);
+      if (form) form.style.display = 'none';
+      if (toggleBtn) toggleBtn.textContent = '+ Raise Ticket';
+    };
+  }
+
+  // Submit ticket
+  const submitBtn = document.querySelector(`.tk-submit-btn[data-safeid="${safeid}"]`);
+  if (submitBtn) {
+    submitBtn.onclick = async () => {
+      const subject  = (document.getElementById('tksub-' + safeid) || {}).value?.trim();
+      const message  = (document.getElementById('tkmsg-' + safeid) || {}).value?.trim();
+      const priority = (document.getElementById('tkpri-' + safeid) || {}).value;
+      const attachments = getUploaderAttachments('tkup-' + safeid);
+      if (!subject) { flashToast('Please enter a subject', true); return; }
+      if (!message) { flashToast('Please enter a message', true); return; }
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting…';
+      try {
+        await apiPost('/tickets', { jobId, subject, message, priority, attachments });
+        flashToast('Ticket submitted! 🎫');
+        const form = document.getElementById('tkform-' + safeid);
+        if (form) form.style.display = 'none';
+        if (toggleBtn) toggleBtn.textContent = '+ Raise Ticket';
+        // Clear fields
+        const sub = document.getElementById('tksub-' + safeid);
+        const msg = document.getElementById('tkmsg-' + safeid);
+        if (sub) sub.value = '';
+        if (msg) msg.value = '';
+        setUploaderAttachments('tkup-' + safeid, []);
+        loadTicketList(jobId, safeid, isAdmin);
+      } catch (err) {
+        flashToast(err.message, true);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Submit Ticket';
+      }
+    };
+  }
+}
+
+// legacy compat
+export function renderRoleSwitcher(){ return ''; }
+export function bindRoleSwitcher(){}
+
+/* ── WINDOW GLOBALS ──────────────────────────────────────────── */
+window.__setTheme = function(t){ setTheme(t); };
+
+Object.assign(window, {
+  getToken, getUser, setSession, clearSession, requireAuth, initTheme,
+  api, apiGet, apiPost, apiPut, apiPatch, apiDelete,
+  fmtINR, fmtHours, escapeHtml, fmtDate, flashToast, openModal, logout,
+  getTheme, setTheme,
+  fmtFileSize, getFileCategory, isImageAttachment, openFilePreviewModal,
+  renderAttachmentChips, uploadFilesToServer, renderAttachmentUploader,
+  bindAttachmentUploader, getUploaderAttachments, setUploaderAttachments,
+  renderRoleSwitcher, bindRoleSwitcher, renderNotificationBell, initNotificationBell,
+  renderAppShell, bindAppShellEvents, renderSkeletonCards, renderEmptyState,
+  renderKpiCard, renderBadge, renderProgressBar, renderPeriodPicker,
+  renderSupportTicketSection, bindSupportTicketSection
+});
+
