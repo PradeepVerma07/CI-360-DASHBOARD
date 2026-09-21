@@ -1964,7 +1964,7 @@ app.use("/api/targets", require_targets());
 app.use("/api/salary", require_salary());
 app.use("/api/dashboard", require_dashboard());
 app.use("/api/notifications", require_notifications());
-app.use("/api/tickets", require_tickets());
+app.use("/api/tickets", require("./routes/tickets"));
 app.use("/api/upload", require_upload());
 app.use("/api/tasks", require("./routes/tasks"));
 

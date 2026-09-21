@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const SupportTicketSchema = new mongoose.Schema({
-  jobId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Job', required: true },
+  jobId:    { type: mongoose.Schema.Types.ObjectId, ref: 'Job', default: null, required: false },
   userId:   { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   userName: { type: String, required: true },
   userRole: { type: String, required: true },

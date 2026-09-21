@@ -862,7 +862,7 @@ async function tabTickets(c){
       ${filtered.length === 0 ? renderEmptyState('No support tickets found', 'No tickets match the selected criteria.', '🎫') : `
       <div style="display:flex;flex-direction:column;gap:14px">
         ${filtered.map(t => {
-          const jobTitle = t.jobId ? (t.jobId.title || 'Untitled Job') : 'Assigned Job';
+          const jobTitle = t.jobId ? (t.jobId.title || 'Untitled Job') : 'General Workspace Support';
           const statusSlug = (t.status||'Open').toLowerCase().replace(' ','-');
           const isOpen = t.status === 'Open';
           const shortId = (t._id || '').slice(-4).toUpperCase();
@@ -937,6 +937,8 @@ async function tabTickets(c){
                   ✓ Quick Resolve
                 </button>` : ''}
 
+              <button class="btn danger small emp-tk-del-btn" data-tkid="${t._id}" type="button" style="margin-left:auto;padding:3px 8px;font-size:11px">Delete</button>
+
               <div class="ticket-reply-form" id="emp-tk-replyform-${t._id}">
                 <div class="ticket-templates-bar">
                   <span style="font-size:10px;font-weight:700;color:var(--text-4);text-transform:uppercase;align-self:center">Quick:</span>
@@ -950,7 +952,16 @@ async function tabTickets(c){
                   <button class="btn gold small emp-tk-reply-save" data-tkid="${t._id}" type="button">Save Response</button>
                 </div>
               </div>
-            </div>` : ''}
+            </div>` : (user && String(t.userId?._id || t.userId) === String(user._id) ? `
+            <div class="ticket-toolbar" style="display:flex;align-items:center;gap:8px">
+              <span style="font-size:11.5px;color:var(--text-3);font-weight:700">My Ticket</span>
+              ${t.status !== 'Resolved' && t.status !== 'Closed' ? `
+                <button class="btn ghost small emp-tk-quick-resolve" data-tkid="${t._id}" type="button" style="color:var(--green-600);border-color:var(--green-400)">
+                  ✓ Mark Resolved
+                </button>` : ''}
+              <button class="btn danger small emp-tk-del-btn" data-tkid="${t._id}" type="button" style="margin-left:auto;padding:3px 8px;font-size:11px">Delete</button>
+            </div>
+            ` : '')}
           </div>`;
         }).join('')}
       </div>`}
@@ -990,11 +1001,14 @@ async function tabTickets(c){
   const empRaiseBtn = document.getElementById('empRaiseTicketGlobalBtn');
   if (empRaiseBtn) {
     empRaiseBtn.onclick = async () => {
-      const jobs = await apiGet('/jobs?mine=true');
-      if (!jobs.length) {
-        flashToast('No jobs assigned to raise tickets against.', true);
-        return;
-      }
+      let jobs = [];
+      try {
+        jobs = await apiGet('/jobs?mine=true');
+        if (!jobs || !jobs.length) {
+          jobs = await apiGet('/jobs').catch(() => []);
+        }
+      } catch(e) { jobs = []; }
+
       const bg = openModal(`
         <div style="margin-bottom:14px">
           <h3 style="margin-bottom:4px">🎫 Raise Support Ticket</h3>
@@ -1002,10 +1016,10 @@ async function tabTickets(c){
         </div>
 
         <div class="field" style="margin-bottom:12px">
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-3);margin-bottom:6px;display:block">Select Job *</label>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-3);margin-bottom:6px;display:block">Target / Job (Optional)</label>
           <select id="empModalTkJob" style="width:100%;font-size:13.5px;padding:10px 12px;border:1px solid var(--border-sm);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-1)">
-            <option value="">Choose a job…</option>
-            ${jobs.map(j => `<option value="${j._id}">${escapeHtml(j.title || 'Untitled Job')} (${escapeHtml(clientName(j.clientId))})</option>`).join('')}
+            <option value="">📁 General Workspace Support (No specific job)</option>
+            ${jobs.map(j => `<option value="${j._id}">${escapeHtml(j.title || 'Untitled Job')}</option>`).join('')}
           </select>
         </div>
 
@@ -1040,12 +1054,11 @@ async function tabTickets(c){
 
       bg.querySelector('#mEmpCancelTicket').onclick = () => bg.remove();
       bg.querySelector('#mEmpSubmitTicket').onclick = async () => {
-        const jobId    = bg.querySelector('#empModalTkJob').value;
+        const jobId    = bg.querySelector('#empModalTkJob').value || null;
         const subject  = bg.querySelector('#empModalTkSub').value.trim();
         const priority = bg.querySelector('#empModalTkPri').value;
         const message  = bg.querySelector('#empModalTkMsg').value.trim();
 
-        if (!jobId) { flashToast('Please select a job', true); return; }
         if (!subject) { flashToast('Please enter an issue subject', true); return; }
         if (!message) { flashToast('Please enter description', true); return; }
 
@@ -1061,18 +1074,30 @@ async function tabTickets(c){
     };
   }
 
+  // Quick Resolve (all authorized users: leads and ticket owners)
+  document.querySelectorAll('.emp-tk-quick-resolve').forEach(btn => {
+    btn.onclick = async () => {
+      try {
+        await apiPut('/tickets/' + btn.dataset.tkid, { status: 'Resolved' });
+        flashToast('Ticket marked as Resolved! 🎉');
+        renderTab();
+      } catch (err) { flashToast(err.message, true); }
+    };
+  });
+
+  // Delete ticket (leads and ticket owners)
+  document.querySelectorAll('.emp-tk-del-btn').forEach(btn => {
+    btn.onclick = async () => {
+      if (!confirm('Permanently delete this ticket?')) return;
+      try {
+        await apiDelete('/tickets/' + btn.dataset.tkid);
+        flashToast('Ticket deleted');
+        renderTab();
+      } catch (err) { flashToast(err.message, true); }
+    };
+  });
 
   if (isLead) {
-    document.querySelectorAll('.emp-tk-quick-resolve').forEach(btn => {
-      btn.onclick = async () => {
-        try {
-          await apiPut('/tickets/' + btn.dataset.tkid, { status: 'Resolved' });
-          flashToast('Ticket marked as Resolved! 🎉');
-          renderTab();
-        } catch (err) { flashToast(err.message, true); }
-      };
-    });
-
     document.querySelectorAll('.ticket-template-btn').forEach(btn => {
       btn.onclick = () => {
         const txt = document.getElementById('emp-tk-replytxt-' + btn.dataset.tkid);

@@ -878,7 +878,7 @@ async function tabTickets(c){
       ${filtered.length === 0 ? renderEmptyState('No support tickets found', 'No tickets match the active filters or search criteria.', '🎫') : `
       <div style="display:flex;flex-direction:column;gap:14px">
         ${filtered.map(t => {
-          const jobTitle = t.jobId ? (t.jobId.title || 'Untitled Job') : 'General Workspace';
+          const jobTitle = t.jobId ? (t.jobId.title || 'Untitled Job') : 'General Workspace Support';
           const statusSlug = (t.status||'Open').toLowerCase().replace(' ','-');
           const isOpen = t.status === 'Open';
           const shortId = (t._id || '').slice(-4).toUpperCase();
@@ -1008,11 +1008,11 @@ async function tabTickets(c){
   const globalRaiseBtn = document.getElementById('admRaiseTicketGlobalBtn');
   if (globalRaiseBtn) {
     globalRaiseBtn.onclick = async () => {
-      const jobs = await apiGet('/jobs');
-      if (!jobs.length) {
-        flashToast('No jobs available to raise tickets against.', true);
-        return;
-      }
+      let jobs = [];
+      try {
+        jobs = await apiGet('/jobs');
+      } catch(e) { jobs = []; }
+
       const bg = openModal(`
         <div style="margin-bottom:14px">
           <h3 style="margin-bottom:4px">🎫 Raise Support Ticket</h3>
@@ -1020,9 +1020,9 @@ async function tabTickets(c){
         </div>
 
         <div class="field" style="margin-bottom:12px">
-          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-3);margin-bottom:6px;display:block">Select Job *</label>
+          <label style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-3);margin-bottom:6px;display:block">Target / Job (Optional)</label>
           <select id="modalTkJob" style="width:100%;font-size:13.5px;padding:10px 12px;border:1px solid var(--border-sm);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-1)">
-            <option value="">Choose a job…</option>
+            <option value="">📁 General Workspace Support (No specific job)</option>
             ${jobs.map(j => `<option value="${j._id}">${escapeHtml(j.title || 'Untitled Job')} (${escapeHtml(clientName(j.clientId))})</option>`).join('')}
           </select>
         </div>
@@ -1058,12 +1058,11 @@ async function tabTickets(c){
 
       bg.querySelector('#mCancelTicket').onclick = () => bg.remove();
       bg.querySelector('#mSubmitTicket').onclick = async () => {
-        const jobId    = bg.querySelector('#modalTkJob').value;
+        const jobId    = bg.querySelector('#modalTkJob').value || null;
         const subject  = bg.querySelector('#modalTkSub').value.trim();
         const priority = bg.querySelector('#modalTkPri').value;
         const message  = bg.querySelector('#modalTkMsg').value.trim();
 
-        if (!jobId) { flashToast('Please select a job', true); return; }
         if (!subject) { flashToast('Please enter an issue subject', true); return; }
         if (!message) { flashToast('Please enter description', true); return; }
 
