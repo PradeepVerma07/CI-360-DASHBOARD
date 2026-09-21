@@ -1,0 +1,7 @@
+# API calls go to Netlify serverless function
+/api/*  /.netlify/functions/api/:splat  200
+
+# Root goes to login
+/  /login.html  302
+
+# All other routes serve their own HTML (don't override real files)

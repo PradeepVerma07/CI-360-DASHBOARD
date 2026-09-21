@@ -13,9 +13,10 @@ web/.env
 web/.env.*
 
 # Build output
-dist/
-web/dist/
-backend/dist/
+/dist/
+/backend/dist/
+!web/dist/
+!web/dist/**
 
 # Logs
 *.log
