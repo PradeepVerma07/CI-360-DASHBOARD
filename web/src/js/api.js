@@ -1,7 +1,5 @@
 // Thin fetch wrapper shared by all dashboards.
-const isLocalhost = typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
-const isRenderHost = typeof window !== 'undefined' && window.location.hostname.includes('onrender.com');
-const API_BASE = import.meta.env.VITE_API_URL || ((isLocalhost || isRenderHost) ? '/api' : 'https://ci360backend.onrender.com/api');
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 export function getToken(){ return localStorage.getItem('ci360_token'); }
 export function getUser(){ try{ return JSON.parse(localStorage.getItem('ci360_user')); }catch(e){ return null; } }
