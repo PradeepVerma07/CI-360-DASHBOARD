@@ -271,6 +271,18 @@ export function initNotificationBell(){
 /* ── APP SHELL ───────────────────────────────────────────────── */
 export function renderAppShell({ user, currentRole, activeTab, tabs, title, subtitle }){
   const initial = user && user.name ? user.name.charAt(0).toUpperCase() : 'U';
+  const roleBadge = user && user.role === 'superadmin'
+    ? 'Super Admin'
+    : user && user.role === 'employee'
+      ? 'Employee'
+      : user && user.role === 'client'
+        ? 'Client'
+        : (user && user.role ? user.role.toUpperCase() : 'User');
+  const userName = user && user.name ? user.name : 'User';
+  const userEmail = user && user.email ? user.email : (user && user.username ? user.username : '');
+  const hasLogJobTab = tabs && tabs.some(t => t.key === 'logjob');
+  const activeTabObj = tabs && tabs.find(t => t.key === activeTab);
+  const pageTitle = title || (activeTabObj && activeTabObj.label) || 'Dashboard';
 
   return `
     <div class="app-shell">
@@ -295,34 +307,131 @@ export function renderAppShell({ user, currentRole, activeTab, tabs, title, subt
           <div class="user-avatar">${initial}</div>
           <div class="user-details">
             <div class="name">${escapeHtml(user ? user.name : 'User')}</div>
-            <div class="role">${escapeHtml(user ? (user.role === 'superadmin' ? 'Admin' : user.role) : '')}</div>
+            <div class="role">${escapeHtml(roleBadge)}</div>
           </div>
         </div>
       </aside>
 
       <main class="app-main" role="main">
         <header class="app-topbar">
+          <!-- Left: Mobile Toggle & Breadcrumbs / Title -->
           <div class="topbar-left">
             <button type="button" class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open navigation">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-            <div>
-              <div class="page-heading-title">${escapeHtml(title || 'Dashboard')}</div>
-              ${subtitle ? `<div style="font-size:11.5px;color:var(--text-4);margin-top:1px">${escapeHtml(subtitle)}</div>` : ''}
+            <div class="topbar-breadcrumb-wrap">
+              <div class="topbar-breadcrumbs">
+                <span class="topbar-crumb-app">
+                  <span class="status-indicator-dot"></span>
+                  CI360
+                </span>
+                <span class="topbar-crumb-sep">/</span>
+                <span class="topbar-crumb-portal">${escapeHtml(roleBadge)}</span>
+                <span class="topbar-crumb-sep">/</span>
+                <span class="topbar-crumb-active">${escapeHtml(pageTitle)}</span>
+              </div>
+              <div class="topbar-title-row">
+                <h1 class="page-heading-title">${escapeHtml(pageTitle)}</h1>
+                ${subtitle ? `<span class="topbar-subtitle-pill" title="${escapeHtml(subtitle)}">${escapeHtml(subtitle)}</span>` : ''}
+              </div>
             </div>
           </div>
-          <div class="topbar-right">
-            <div class="theme-toggle-wrap">
-              <button class="theme-btn ${getTheme()==='light'?'active':''}" data-theme="light" onclick="window.__setTheme('light')" title="Light mode" type="button">☀️</button>
-              <button class="theme-btn ${getTheme()==='dark'?'active':''}" data-theme="dark" onclick="window.__setTheme('dark')" title="Dark mode" type="button">🌙</button>
-            </div>
-            ${renderNotificationBell()}
-            <button type="button" class="logout-btn-header" id="logoutBtn">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-              Log out
+
+          <!-- Center: Command Palette Trigger -->
+          <div class="topbar-center">
+            <button type="button" class="cmd-trigger" id="topbarCmdTrigger" aria-label="Search and command palette">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <span class="cmd-trigger-text">Search commands, tabs…</span>
+              <kbd class="cmd-kbd">⌘K</kbd>
             </button>
+          </div>
+
+          <!-- Right: Actions, Theme, Notifications & User Menu -->
+          <div class="topbar-right">
+            <button type="button" class="cmd-trigger-mobile" id="topbarCmdTriggerMobile" title="Quick Search (⌘K)" aria-label="Quick Search">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            </button>
+
+            ${hasLogJobTab ? `
+            <button type="button" class="topbar-quick-btn" id="topbarQuickLogJobBtn" title="Log a new job">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Log Job</span>
+            </button>` : ''}
+
+            <div class="theme-toggle-wrap">
+              <button class="theme-btn ${getTheme()==='light'?'active':''}" data-theme="light" onclick="window.__setTheme('light')" title="Light mode" type="button" aria-label="Light mode">☀️</button>
+              <button class="theme-btn ${getTheme()==='dark'?'active':''}" data-theme="dark" onclick="window.__setTheme('dark')" title="Dark mode" type="button" aria-label="Dark mode">🌙</button>
+            </div>
+
+            ${renderNotificationBell()}
+
+            <div class="topbar-user-menu-wrap">
+              <button type="button" class="topbar-user-btn" id="topbarUserBtn" aria-expanded="false" aria-haspopup="true" title="Account & settings">
+                <div class="topbar-user-avatar">
+                  <span>${initial}</span>
+                  <span class="topbar-online-dot"></span>
+                </div>
+                <div class="topbar-user-meta">
+                  <span class="topbar-user-name">${escapeHtml(userName)}</span>
+                  <span class="topbar-user-role-badge">${escapeHtml(roleBadge)}</span>
+                </div>
+                <svg class="topbar-chevron" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </button>
+
+              <div class="topbar-user-dropdown" id="topbarUserDropdown" style="display:none" role="menu">
+                <div class="tud-header">
+                  <div class="tud-avatar">${initial}</div>
+                  <div class="tud-meta">
+                    <div class="tud-name">${escapeHtml(userName)}</div>
+                    ${userEmail ? `<div class="tud-email">${escapeHtml(userEmail)}</div>` : ''}
+                    <span class="tud-role-chip">${escapeHtml(roleBadge)}</span>
+                  </div>
+                </div>
+                <div class="tud-divider"></div>
+                <div class="tud-items">
+                  <button type="button" class="tud-item" id="tudCmdBtn" role="menuitem">
+                    <span class="tud-icon">⚡</span>
+                    <span class="tud-label">Command Palette</span>
+                    <kbd class="tud-kbd">⌘K</kbd>
+                  </button>
+                  <button type="button" class="tud-item" id="tudThemeToggleBtn" role="menuitem">
+                    <span class="tud-icon">${getTheme()==='dark' ? '☀️' : '🌙'}</span>
+                    <span class="tud-label">Switch to ${getTheme()==='dark' ? 'Light' : 'Dark'} Mode</span>
+                  </button>
+                  <div class="tud-item-static">
+                    <span class="tud-icon">🛡️</span>
+                    <span class="tud-label">Session: Verified</span>
+                  </div>
+                </div>
+                <div class="tud-divider"></div>
+                <div class="tud-items">
+                  <button type="button" class="tud-item danger" id="logoutBtn" role="menuitem">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                    <span class="tud-label">Sign out</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
         </header>
+
+        <!-- Global Command Palette Modal -->
+        <div id="cmdPaletteBackdrop" class="cmd-backdrop" aria-hidden="true">
+          <div class="cmd-dialog" role="dialog" aria-modal="true" aria-label="Command Palette">
+            <div class="cmd-input-row">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="cmdSearchInput" placeholder="Type a command or jump to tab..." autocomplete="off" spellcheck="false">
+              <kbd class="cmd-kbd" id="cmdCloseKbd">ESC</kbd>
+            </div>
+            <div class="cmd-results" id="cmdResultsList"></div>
+            <div class="cmd-footer">
+              <span class="cmd-footer-hint"><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+              <span class="cmd-footer-hint"><kbd>↵</kbd> select</span>
+              <span class="cmd-footer-hint"><kbd>esc</kbd> close</span>
+            </div>
+          </div>
+        </div>
+
         <div class="app-content">
           <div id="content"></div>
         </div>
@@ -348,6 +457,48 @@ export function bindAppShellEvents(onTabChange){
   if(mobileToggle) mobileToggle.onclick = openSidebar;
   if(overlay) overlay.onclick = closeSidebar;
 
+  // User Dropdown Menu
+  const userBtn = document.getElementById('topbarUserBtn');
+  const userDropdown = document.getElementById('topbarUserDropdown');
+  if(userBtn && userDropdown){
+    userBtn.onclick = (e) => {
+      e.stopPropagation();
+      const isOpen = userDropdown.style.display !== 'none';
+      userDropdown.style.display = isOpen ? 'none' : 'block';
+      userBtn.setAttribute('aria-expanded', String(!isOpen));
+      const notifDropdown = document.getElementById('notifDropdown');
+      if(notifDropdown) notifDropdown.style.display = 'none';
+    };
+
+    document.addEventListener('click', (e) => {
+      if(!userDropdown.contains(e.target) && !userBtn.contains(e.target)){
+        userDropdown.style.display = 'none';
+        userBtn.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
+
+  // User Dropdown Theme Toggle Button
+  const tudThemeBtn = document.getElementById('tudThemeToggleBtn');
+  if(tudThemeBtn){
+    tudThemeBtn.onclick = () => {
+      const nextTheme = getTheme() === 'dark' ? 'light' : 'dark';
+      setTheme(nextTheme);
+      const icon = tudThemeBtn.querySelector('.tud-icon');
+      const label = tudThemeBtn.querySelector('.tud-label');
+      if(icon) icon.textContent = nextTheme === 'dark' ? '☀️' : '🌙';
+      if(label) label.textContent = `Switch to ${nextTheme === 'dark' ? 'Light' : 'Dark'} Mode`;
+    };
+  }
+
+  // Topbar Quick Action (+ Log Job)
+  const quickLogJobBtn = document.getElementById('topbarQuickLogJobBtn');
+  if(quickLogJobBtn){
+    quickLogJobBtn.onclick = () => {
+      if(onTabChange) onTabChange('logjob');
+    };
+  }
+
   // Logout
   const logoutBtn = document.getElementById('logoutBtn');
   if(logoutBtn) logoutBtn.onclick = logout;
@@ -362,6 +513,213 @@ export function bindAppShellEvents(onTabChange){
       if(onTabChange) onTabChange(btn.dataset.tab);
     };
   });
+
+  // Command Palette Initialization
+  initCommandPalette(onTabChange);
+}
+
+function initCommandPalette(onTabChange){
+  const backdrop = document.getElementById('cmdPaletteBackdrop');
+  const input = document.getElementById('cmdSearchInput');
+  const results = document.getElementById('cmdResultsList');
+  const triggerDesktop = document.getElementById('topbarCmdTrigger');
+  const triggerMobile = document.getElementById('topbarCmdTriggerMobile');
+  const tudCmdBtn = document.getElementById('tudCmdBtn');
+  const closeKbd = document.getElementById('cmdCloseKbd');
+
+  if(!backdrop || !input || !results) return;
+
+  // Gather navigation items from sidebar
+  const sidebarItems = Array.from(document.querySelectorAll('.sidebar-item'));
+  const commands = sidebarItems.map(item => ({
+    type: 'tab',
+    id: item.dataset.tab,
+    label: item.querySelector('span:last-child')?.textContent || item.dataset.tab,
+    icon: item.querySelector('.icon')?.textContent || '📌',
+    sub: 'Navigate to section',
+    action: () => {
+      if(onTabChange) onTabChange(item.dataset.tab);
+    }
+  }));
+
+  // Quick Action: Log Job if available
+  const hasLogJob = sidebarItems.some(i => i.dataset.tab === 'logjob');
+  if(hasLogJob){
+    commands.unshift({
+      type: 'action',
+      id: 'quick-logjob',
+      label: 'Log a New Job',
+      icon: '➕',
+      sub: 'Create & submit work delivery',
+      action: () => {
+        if(onTabChange) onTabChange('logjob');
+      }
+    });
+  }
+
+  // System Actions
+  commands.push({
+    type: 'action',
+    id: 'toggle-theme',
+    label: getTheme() === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode',
+    icon: '🌓',
+    sub: 'Change interface appearance',
+    action: () => {
+      setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+    }
+  });
+
+  commands.push({
+    type: 'action',
+    id: 'notifs',
+    label: 'View Notifications',
+    icon: '🔔',
+    sub: 'Pending alerts and notices',
+    action: () => {
+      const bell = document.getElementById('notifBellBtn');
+      if(bell) bell.click();
+    }
+  });
+
+  commands.push({
+    type: 'action',
+    id: 'logout',
+    label: 'Sign out of CI360',
+    icon: '🚪',
+    sub: 'End current authenticated session',
+    action: () => logout()
+  });
+
+  let selectedIndex = 0;
+  let filtered = [...commands];
+
+  function renderList(){
+    if(!filtered.length){
+      results.innerHTML = `<div class="cmd-result" style="color:var(--text-4);cursor:default;justify-content:center;padding:24px 14px;">No matching tabs or commands found</div>`;
+      return;
+    }
+    results.innerHTML = filtered.map((cmd, idx) => `
+      <div class="cmd-result ${idx === selectedIndex ? 'selected' : ''}" data-idx="${idx}">
+        <div class="cmd-result-icon">${cmd.icon}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;line-height:1.2">${escapeHtml(cmd.label)}</div>
+          <div style="font-size:11px;color:var(--text-4);font-weight:500">${escapeHtml(cmd.sub)}</div>
+        </div>
+        <kbd class="cmd-kbd" style="font-size:9.5px">↵</kbd>
+      </div>
+    `).join('');
+
+    results.querySelectorAll('.cmd-result').forEach(el => {
+      el.onmouseenter = () => {
+        selectedIndex = Number(el.dataset.idx);
+        updateSelection();
+      };
+      el.onclick = () => {
+        execute(Number(el.dataset.idx));
+      };
+    });
+  }
+
+  function updateSelection(){
+    results.querySelectorAll('.cmd-result').forEach((el, idx) => {
+      el.classList.toggle('selected', idx === selectedIndex);
+    });
+  }
+
+  function execute(idx){
+    const cmd = filtered[idx];
+    if(cmd && cmd.action){
+      closePalette();
+      cmd.action();
+    }
+  }
+
+  function openPalette(){
+    const userDropdown = document.getElementById('topbarUserDropdown');
+    if(userDropdown) userDropdown.style.display = 'none';
+    backdrop.classList.add('open');
+    input.value = '';
+    filtered = [...commands];
+    selectedIndex = 0;
+    renderList();
+    setTimeout(() => input.focus(), 50);
+  }
+
+  function closePalette(){
+    backdrop.classList.remove('open');
+    input.blur();
+  }
+
+  if(triggerDesktop) triggerDesktop.onclick = openPalette;
+  if(triggerMobile) triggerMobile.onclick = openPalette;
+  if(tudCmdBtn) tudCmdBtn.onclick = () => {
+    const userDropdown = document.getElementById('topbarUserDropdown');
+    if(userDropdown) userDropdown.style.display = 'none';
+    openPalette();
+  };
+  if(closeKbd) closeKbd.onclick = closePalette;
+
+  backdrop.onclick = (e) => {
+    if(e.target === backdrop) closePalette();
+  };
+
+  input.oninput = () => {
+    const q = input.value.trim().toLowerCase();
+    if(!q){
+      filtered = [...commands];
+    } else {
+      filtered = commands.filter(c => 
+        c.label.toLowerCase().includes(q) || c.sub.toLowerCase().includes(q)
+      );
+    }
+    selectedIndex = 0;
+    renderList();
+  };
+
+  input.onkeydown = (e) => {
+    if(e.key === 'ArrowDown'){
+      e.preventDefault();
+      if(filtered.length > 0){
+        selectedIndex = (selectedIndex + 1) % filtered.length;
+        updateSelection();
+        const sel = results.querySelector('.cmd-result.selected');
+        if(sel) sel.scrollIntoView({ block: 'nearest' });
+      }
+    } else if(e.key === 'ArrowUp'){
+      e.preventDefault();
+      if(filtered.length > 0){
+        selectedIndex = (selectedIndex - 1 + filtered.length) % filtered.length;
+        updateSelection();
+        const sel = results.querySelector('.cmd-result.selected');
+        if(sel) sel.scrollIntoView({ block: 'nearest' });
+      }
+    } else if(e.key === 'Enter'){
+      e.preventDefault();
+      execute(selectedIndex);
+    } else if(e.key === 'Escape'){
+      e.preventDefault();
+      closePalette();
+    }
+  };
+
+  // Keyboard shortcut listener
+  const keyHandler = (e) => {
+    if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'){
+      e.preventDefault();
+      if(backdrop.classList.contains('open')){
+        closePalette();
+      } else {
+        openPalette();
+      }
+    } else if(e.key === 'Escape' && backdrop.classList.contains('open')){
+      closePalette();
+    }
+  };
+  if(window.__ci360CmdKeyHandler){
+    window.removeEventListener('keydown', window.__ci360CmdKeyHandler);
+  }
+  window.__ci360CmdKeyHandler = keyHandler;
+  window.addEventListener('keydown', keyHandler);
 }
 
 /* ── SKELETON LOADERS ────────────────────────────────────────── */
