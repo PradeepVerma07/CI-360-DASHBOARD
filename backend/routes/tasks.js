@@ -14,7 +14,14 @@ router.get('/', async (req, res) => {
     const filter = {};
 
     if (req.user.role !== 'superadmin' || req.query.mine === 'true') {
-      filter.userId = req.user._id;
+      const userConditions = [{ userId: req.user._id }];
+      if (req.user.personnelId) {
+        userConditions.push({ personnelId: req.user.personnelId });
+      } else if (req.user.name) {
+        const p = await Personnel.findOne({ name: new RegExp('^' + req.user.name + '$', 'i') });
+        if (p) userConditions.push({ personnelId: p._id });
+      }
+      filter.$or = userConditions;
     } else {
       if (req.query.personnelId && req.query.personnelId !== 'all') {
         filter.personnelId = req.query.personnelId;
@@ -35,12 +42,18 @@ router.get('/', async (req, res) => {
     }
     if (req.query.search) {
       const q = req.query.search.trim();
-      filter.$or = [
+      const searchCond = [
         { title: { $regex: q, $options: 'i' } },
         { description: { $regex: q, $options: 'i' } },
         { category: { $regex: q, $options: 'i' } },
         { tags: { $in: [new RegExp(q, 'i')] } }
       ];
+      if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { $or: searchCond }];
+        delete filter.$or;
+      } else {
+        filter.$or = searchCond;
+      }
     }
 
     const tasks = await Task.find(filter)
@@ -71,23 +84,66 @@ router.post('/', async (req, res) => {
       jobId,
       clientId,
       checklists,
-      tags
+      tags,
+      personnelId: reqPersonnelId,
+      assignAll
     } = req.body;
 
     if (!title || !title.trim()) {
       return res.status(400).json({ error: 'Task title is required' });
     }
 
-    let personnelId = req.user.personnelId || null;
-    if (!personnelId && req.user.name) {
+    const isCompleted = status === 'Completed';
+
+    // Handle Admin bulk assignment to all team members
+    if (req.user.role === 'superadmin' && (assignAll === true || reqPersonnelId === 'all')) {
+      const allPersonnel = await Personnel.find({ status: { $ne: 'inactive' } });
+      const User = mongoose.models.User || require('../models/User');
+      const createdTasks = [];
+
+      for (const pers of allPersonnel) {
+        let uId = req.user._id;
+        const linkedUser = await User.findOne({ personnelId: pers._id });
+        if (linkedUser) uId = linkedUser._id;
+
+        const t = new Task({
+          userId: uId,
+          personnelId: pers._id,
+          title: title.trim(),
+          description: description ? description.trim() : '',
+          status: status || 'Todo',
+          priority: priority || 'Medium',
+          dueDate: dueDate ? new Date(dueDate) : null,
+          category: category ? category.trim() : 'General',
+          jobId: jobId || null,
+          clientId: clientId || null,
+          checklists: Array.isArray(checklists) ? checklists : [],
+          tags: Array.isArray(tags) ? tags : [],
+          completedAt: isCompleted ? new Date() : null
+        });
+        await t.save();
+        createdTasks.push(t);
+      }
+
+      return res.status(201).json({ success: true, count: createdTasks.length, tasks: createdTasks });
+    }
+
+    // Determine target personnel and target user
+    let personnelId = reqPersonnelId || req.user.personnelId || null;
+    let targetUserId = req.user._id;
+
+    if (req.user.role === 'superadmin' && reqPersonnelId) {
+      personnelId = reqPersonnelId;
+      const User = mongoose.models.User || require('../models/User');
+      const linkedUser = await User.findOne({ personnelId: reqPersonnelId });
+      if (linkedUser) targetUserId = linkedUser._id;
+    } else if (!personnelId && req.user.name) {
       const p = await Personnel.findOne({ name: new RegExp('^' + req.user.name + '$', 'i') });
       if (p) personnelId = p._id;
     }
 
-    const isCompleted = status === 'Completed';
-
     const task = new Task({
-      userId: req.user._id,
+      userId: targetUserId,
       personnelId,
       title: title.trim(),
       description: description ? description.trim() : '',
@@ -107,7 +163,7 @@ router.post('/', async (req, res) => {
     await createNotificationForTask({
       type: 'task_created',
       title: '✅ Daily Task Added',
-      message: `"${task.title}" was added to your daily checklist.`,
+      message: `"${task.title}" was added to daily checklist.`,
       task,
       actorId: req.user._id,
       actorName: req.user.name
@@ -129,7 +185,13 @@ router.post('/', async (req, res) => {
 // PUT /api/tasks/:id
 router.put('/:id', async (req, res) => {
   try {
-    const taskQuery = req.user.role === 'superadmin' ? { _id: req.params.id } : { _id: req.params.id, userId: req.user._id };
+    let taskQuery = { _id: req.params.id };
+    if (req.user.role !== 'superadmin') {
+      const userConditions = [{ userId: req.user._id }];
+      if (req.user.personnelId) userConditions.push({ personnelId: req.user.personnelId });
+      taskQuery.$or = userConditions;
+    }
+
     const task = await Task.findOne(taskQuery);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
@@ -146,13 +208,17 @@ router.put('/:id', async (req, res) => {
       clientId,
       checklists,
       timeSpent,
-      tags
+      tags,
+      personnelId
     } = req.body;
 
     const wasCompleted = task.status === 'Completed';
 
     if (title !== undefined) task.title = title.trim();
     if (description !== undefined) task.description = description.trim();
+    if (personnelId !== undefined && req.user.role === 'superadmin') {
+      task.personnelId = personnelId || null;
+    }
     if (status !== undefined) {
       if (status === 'Completed' && !wasCompleted) {
         task.completedAt = new Date();
@@ -208,7 +274,13 @@ router.put('/:id', async (req, res) => {
 // PATCH /api/tasks/:id/toggle
 router.patch('/:id/toggle', async (req, res) => {
   try {
-    const taskQuery = req.user.role === 'superadmin' ? { _id: req.params.id } : { _id: req.params.id, userId: req.user._id };
+    let taskQuery = { _id: req.params.id };
+    if (req.user.role !== 'superadmin') {
+      const userConditions = [{ userId: req.user._id }];
+      if (req.user.personnelId) userConditions.push({ personnelId: req.user.personnelId });
+      taskQuery.$or = userConditions;
+    }
+
     const task = await Task.findOne(taskQuery);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
@@ -245,7 +317,7 @@ router.patch('/:id/toggle', async (req, res) => {
 // PATCH /api/tasks/:id/checklist/:checkId
 router.patch('/:id/checklist/:checkId', async (req, res) => {
   try {
-    const task = await Task.findOne({ _id: req.params.id, userId: req.user._id });
+    const task = await Task.findOne({ _id: req.params.id });
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -271,8 +343,14 @@ router.patch('/:id/checklist/:checkId', async (req, res) => {
 // DELETE /api/tasks/:id
 router.delete('/:id', async (req, res) => {
   try {
-    const query = req.user.role === 'superadmin' ? { _id: req.params.id } : { _id: req.params.id, userId: req.user._id };
-    const task = await Task.findOneAndDelete(query);
+    let taskQuery = { _id: req.params.id };
+    if (req.user.role !== 'superadmin') {
+      const userConditions = [{ userId: req.user._id }];
+      if (req.user.personnelId) userConditions.push({ personnelId: req.user.personnelId });
+      taskQuery.$or = userConditions;
+    }
+
+    const task = await Task.findOneAndDelete(taskQuery);
     if (!task) {
       return res.status(404).json({ error: 'Task not found' });
     }
@@ -288,7 +366,9 @@ router.post('/clear-completed', async (req, res) => {
   try {
     const filter = { status: 'Completed' };
     if (req.user.role !== 'superadmin' || req.body.mine === true) {
-      filter.userId = req.user._id;
+      const userConditions = [{ userId: req.user._id }];
+      if (req.user.personnelId) userConditions.push({ personnelId: req.user.personnelId });
+      filter.$or = userConditions;
     } else if (req.body.personnelId && req.body.personnelId !== 'all') {
       filter.personnelId = req.body.personnelId;
     }

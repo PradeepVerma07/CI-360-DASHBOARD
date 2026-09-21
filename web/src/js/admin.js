@@ -2516,6 +2516,43 @@ async function tabDailyTasks(c) {
         </div>
       </div>
 
+      <!-- Assign Daily Task Card -->
+      <div class="card" style="padding:16px 20px;margin-bottom:20px;background:var(--bg-card);border:1px solid var(--border-sm);box-shadow:var(--shadow-xs)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+          <div style="font-size:14px;font-weight:700;color:var(--text-1);display:flex;align-items:center;gap:6px">
+            <span>➕</span> Assign Daily Task
+          </div>
+          <div style="font-size:12px;color:var(--text-3)">Assign to an individual team member or broadcast across all active staff</div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <div style="flex:2;min-width:220px">
+            <input type="text" id="admDailyTaskInp" placeholder="Enter task title or instruction... (Press Enter to assign)" style="width:100%;padding:8px 12px;border:1px solid var(--border-sm);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-1);font-size:13px;outline:none" />
+          </div>
+          <div style="flex:1;min-width:180px">
+            <select id="admDailyAssignSelect" style="width:100%;padding:8px 10px;border:1px solid var(--border-sm);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-1);font-size:12.5px;outline:none">
+              <option value="all">👥 All Active Employees</option>
+              ${personnelList.filter(p => p.status !== 'inactive').map(p => `
+                <option value="${p._id}" ${adminTaskUi.personnelId === p._id ? 'selected' : ''}>${escapeHtml(p.name)} (${p.role || p.department || 'Staff'})</option>
+              `).join('')}
+            </select>
+          </div>
+          <div style="width:135px">
+            <input type="date" id="admDailyAssignDate" value="${activeDate === 'all' ? todayStr : activeDate}" style="width:100%;padding:7px 10px;border:1px solid var(--border-sm);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-1);font-size:12px;outline:none" />
+          </div>
+          <div style="width:110px">
+            <select id="admDailyAssignPriority" style="width:100%;padding:8px 8px;border:1px solid var(--border-sm);border-radius:var(--r-md);background:var(--bg-surface);color:var(--text-1);font-size:12px;outline:none">
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+              <option value="Urgent">Urgent</option>
+              <option value="Low">Low</option>
+            </select>
+          </div>
+          <button type="button" class="btn gold small" id="admDailyAddBtn" style="padding:8px 16px;font-size:12.5px;font-weight:700;white-space:nowrap">
+            + Assign Task
+          </button>
+        </div>
+      </div>
+
       <!-- Controls & Filter Toolbar -->
       <div class="card" style="padding:14px 18px;margin-bottom:20px;background:var(--bg-card)">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px">
@@ -2558,7 +2595,7 @@ async function tabDailyTasks(c) {
         <div class="card" style="text-align:center;padding:56px 20px">
           <div style="font-size:40px;margin-bottom:10px">📋</div>
           <div style="font-weight:700;font-size:16px;color:var(--text-1);margin-bottom:4px">No daily tasks found</div>
-          <div style="font-size:13px;color:var(--text-3);max-width:380px;margin:0 auto">No tasks have been entered for this date. When employees add or update tasks on their checklist, they will appear here in real-time.</div>
+          <div style="font-size:13px;color:var(--text-3);max-width:380px;margin:0 auto">No tasks have been entered for this date. You can assign tasks using the form above, or wait for employees to add checklist items.</div>
         </div>
       ` : `
         <div style="display:flex;flex-direction:column;gap:18px">
@@ -2582,13 +2619,16 @@ async function tabDailyTasks(c) {
                     </div>
                   </div>
 
-                  <div style="display:flex;align-items:center;gap:12px">
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
                     <span style="font-size:12.5px;font-weight:700;color:${empAllDone ? 'var(--green-600)' : 'var(--text-2)'}">
                       ${empDone} of ${empTotal} completed (${empPct}%)
                     </span>
-                    <div style="width:120px;height:8px;background:var(--bg-elevated);border-radius:var(--r-full);overflow:hidden">
+                    <div style="width:100px;height:8px;background:var(--bg-elevated);border-radius:var(--r-full);overflow:hidden">
                       <div style="width:${empPct}%;height:100%;background:${empAllDone ? 'var(--green-500)' : 'var(--brand-500)'};transition:width 0.4s ease"></div>
                     </div>
+                    <button type="button" class="btn ghost small" onclick="adminQuickAddTaskForEmp('${emp.id}')" style="font-size:11.5px;color:var(--brand-500);padding:3px 8px;font-weight:700" title="Add a task for this employee">
+                      + Add Task
+                    </button>
                     ${empDone > 0 ? `
                       <button type="button" class="btn ghost small" onclick="adminClearCompletedTasks('${emp.id}')" style="font-size:11px;color:var(--text-3);padding:3px 7px" title="Delete completed tasks for this employee">
                         Clear Done (${empDone})
@@ -2619,6 +2659,7 @@ async function tabDailyTasks(c) {
                         <div class="daily-actions-hover" style="opacity:1">
                           ${taskDate ? `<span class="task-tag-pill" style="font-size:10.5px">📅 ${taskDate === todayStr ? 'Today' : taskDate}</span>` : ''}
                           ${t.completedAt ? `<span class="task-tag-pill" style="color:var(--green-600);background:rgba(16,185,129,0.1);font-size:10.5px">Done</span>` : ''}
+                          <button type="button" class="btn ghost small" onclick="adminEditTask('${t._id}')" title="Edit this task" style="padding:3px 7px;font-size:11.5px">✏️</button>
                           <button type="button" class="btn ghost small" onclick="adminDeleteTask('${t._id}')" title="Delete this task" style="padding:3px 7px;font-size:11.5px;color:var(--red-500)">🗑️</button>
                         </div>
                       </div>
@@ -2691,6 +2732,57 @@ async function tabDailyTasks(c) {
     adminTaskUi.search = '';
     renderTab();
   };
+
+  // Bind Admin Add Task
+  const admTaskInp = document.getElementById('admDailyTaskInp');
+  const admAddBtn = document.getElementById('admDailyAddBtn');
+
+  const handleAdminAddTask = async () => {
+    const title = (admTaskInp?.value || '').trim();
+    if (!title) {
+      flashToast('Please enter a task title', true);
+      return;
+    }
+
+    const pSel = document.getElementById('admDailyAssignSelect');
+    const dInp = document.getElementById('admDailyAssignDate');
+    const priSel = document.getElementById('admDailyAssignPriority');
+
+    const targetPId = pSel?.value || 'all';
+    const dueDate = dInp?.value || (adminTaskUi.date === 'all' ? todayStr : adminTaskUi.date);
+    const priority = priSel?.value || 'Medium';
+
+    try {
+      const payload = {
+        title,
+        dueDate,
+        priority,
+        status: 'Todo'
+      };
+
+      if (targetPId === 'all') {
+        payload.assignAll = true;
+        payload.personnelId = 'all';
+      } else {
+        payload.personnelId = targetPId;
+      }
+
+      await apiPost('/tasks', payload);
+      flashToast(targetPId === 'all' ? 'Task assigned to all active employees! 👥' : 'Task assigned! ✍️');
+      if (admTaskInp) {
+        admTaskInp.value = '';
+        admTaskInp.focus();
+      }
+      renderTab();
+    } catch (err) {
+      flashToast(err.message, true);
+    }
+  };
+
+  if (admAddBtn) admAddBtn.onclick = handleAdminAddTask;
+  if (admTaskInp) admTaskInp.onkeydown = (e) => {
+    if (e.key === 'Enter') handleAdminAddTask();
+  };
 }
 
 /* ── ADMIN TASK ACTIONS ── */
@@ -2698,6 +2790,39 @@ window.adminToggleTask = async function(id) {
   try {
     await apiPatch('/tasks/' + id + '/toggle', {});
     flashToast('Task status updated');
+    renderTab();
+  } catch(err) { flashToast(err.message, true); }
+};
+
+window.adminEditTask = async function(id) {
+  try {
+    const tasks = await apiGet('/tasks');
+    const t = tasks.find(x => x._id === id);
+    if (!t) return;
+    const newTitle = prompt('Edit task title:', t.title);
+    if (newTitle !== null && newTitle.trim()) {
+      await apiPut('/tasks/' + id, { title: newTitle.trim() });
+      flashToast('Task updated');
+      renderTab();
+    }
+  } catch(err) { flashToast(err.message, true); }
+};
+
+window.adminQuickAddTaskForEmp = async function(empId) {
+  const title = prompt('Enter task for this employee:');
+  if (!title || !title.trim()) return;
+  try {
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+    const dueDate = adminTaskUi.date === 'all' ? todayStr : adminTaskUi.date;
+    await apiPost('/tasks', {
+      title: title.trim(),
+      personnelId: empId,
+      dueDate,
+      priority: 'Medium',
+      status: 'Todo'
+    });
+    flashToast('Task assigned to employee! ✍️');
     renderTab();
   } catch(err) { flashToast(err.message, true); }
 };

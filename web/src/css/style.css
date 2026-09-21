@@ -4647,3 +4647,37 @@ td select:focus {
 .daily-item-row:hover .daily-actions-hover {
   opacity: 1;
 }
+
+/* Daily Tasks Mobile Responsive Enhancements */
+@media (max-width: 768px) {
+  .daily-date-nav-bar {
+    width: 100%;
+    justify-content: space-between;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px 10px;
+    border-radius: var(--r-md);
+  }
+
+  .daily-date-nav-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .daily-checklist-header {
+    padding: 14px 16px;
+  }
+
+  .daily-checklist-add-bar {
+    padding: 10px 14px;
+    gap: 8px;
+  }
+
+  .daily-item-row {
+    padding: 12px 14px;
+  }
+
+  .daily-actions-hover {
+    opacity: 1 !important;
+  }
+}
