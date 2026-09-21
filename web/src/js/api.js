@@ -284,6 +284,107 @@ export function renderAppShell({ user, currentRole, activeTab, tabs, title, subt
   const activeTabObj = tabs && tabs.find(t => t.key === activeTab);
   const pageTitle = title || (activeTabObj && activeTabObj.label) || 'Dashboard';
 
+  // Mobile Bottom Navigation Mapping
+  let mobileNavItems = [];
+  if (currentRole === 'superadmin') {
+    mobileNavItems = [
+      {
+        key: 'dashboard',
+        label: 'Dashboard',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>`,
+        active: activeTab === 'dashboard'
+      },
+      {
+        key: 'dailytasks',
+        label: 'Tasks',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+        active: activeTab === 'dailytasks'
+      },
+      {
+        key: 'logjob',
+        label: 'Jobs',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
+        active: activeTab === 'logjob'
+      },
+      {
+        key: 'byclient',
+        label: 'Clients',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+        active: activeTab === 'byclient'
+      },
+      {
+        key: '__more__',
+        label: 'More',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>`,
+        active: !['dashboard', 'dailytasks', 'logjob', 'byclient'].includes(activeTab),
+        isMore: true
+      }
+    ];
+  } else if (currentRole === 'employee') {
+    mobileNavItems = [
+      {
+        key: 'myjobs',
+        label: 'Jobs',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`,
+        active: activeTab === 'myjobs'
+      },
+      {
+        key: 'dailytasks',
+        label: 'Tasks',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>`,
+        active: activeTab === 'dailytasks'
+      },
+      {
+        key: 'tickets',
+        label: 'Tickets',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M13 5v2"/><path d="M13 17v2"/></svg>`,
+        active: activeTab === 'tickets'
+      },
+      {
+        key: 'targets',
+        label: 'Targets',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>`,
+        active: activeTab === 'targets'
+      },
+      {
+        key: '__more__',
+        label: 'More',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>`,
+        active: !['myjobs', 'dailytasks', 'tickets', 'targets'].includes(activeTab),
+        isMore: true
+      }
+    ];
+  } else {
+    // client or generic
+    mobileNavItems = [
+      {
+        key: 'logjob',
+        label: 'Log Job',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>`,
+        active: activeTab === 'logjob'
+      },
+      {
+        key: 'jobs',
+        label: 'Delivered',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>`,
+        active: activeTab === 'jobs'
+      },
+      {
+        key: 'team',
+        label: 'Team',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+        active: activeTab === 'team'
+      },
+      {
+        key: '__more__',
+        label: 'More',
+        iconSvg: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/><circle cx="5" cy="12" r="1.5"/></svg>`,
+        active: !['logjob', 'jobs', 'team'].includes(activeTab),
+        isMore: true
+      }
+    ];
+  }
+
   return `
     <div class="app-shell">
       <div class="sidebar-overlay" id="sidebarOverlay"></div>
@@ -314,11 +415,23 @@ export function renderAppShell({ user, currentRole, activeTab, tabs, title, subt
 
       <main class="app-main" role="main">
         <header class="app-topbar">
-          <!-- Left: Mobile Toggle & Breadcrumbs / Title -->
+          <!-- Left: Mobile Toggle & Mobile Brand & Breadcrumbs -->
           <div class="topbar-left">
             <button type="button" class="mobile-nav-toggle" id="mobileNavToggle" aria-label="Open navigation">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
+
+            <!-- Mobile Brand Title (Mockup Left: Cyan Checkmark Badge + CI360) -->
+            <div class="mobile-brand-title">
+              <div class="mobile-brand-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="#06b6d4" stroke-width="2.5" />
+                  <path d="M8 12.5l2.8 2.8 5.2-5.6" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <span class="mobile-brand-text">CI360</span>
+            </div>
+
             <div class="topbar-breadcrumb-wrap">
               <div class="topbar-breadcrumbs">
                 <span class="topbar-crumb-app">
@@ -348,6 +461,16 @@ export function renderAppShell({ user, currentRole, activeTab, tabs, title, subt
 
           <!-- Right: Actions, Theme, Notifications & User Menu -->
           <div class="topbar-right">
+            <!-- Mobile Calendar Button (Mockup Right Item 1) -->
+            <button type="button" class="mobile-topbar-btn" id="mobileCalBtn" aria-label="Select Period" title="Select Period">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+            </button>
+
             <button type="button" class="cmd-trigger-mobile" id="topbarCmdTriggerMobile" title="Quick Search (⌘K)" aria-label="Quick Search">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             </button>
@@ -363,8 +486,10 @@ export function renderAppShell({ user, currentRole, activeTab, tabs, title, subt
               <button class="theme-btn ${getTheme()==='dark'?'active':''}" data-theme="dark" onclick="window.__setTheme('dark')" title="Dark mode" type="button" aria-label="Dark mode">🌙</button>
             </div>
 
+            <!-- Notification Bell (Mockup Right Item 2 with badge 3) -->
             ${renderNotificationBell()}
 
+            <!-- User Menu Avatar (Mockup Right Item 3: Orange 'P' + Chevron) -->
             <div class="topbar-user-menu-wrap">
               <button type="button" class="topbar-user-btn" id="topbarUserBtn" aria-expanded="false" aria-haspopup="true" title="Account & settings">
                 <div class="topbar-user-avatar">
@@ -379,36 +504,85 @@ export function renderAppShell({ user, currentRole, activeTab, tabs, title, subt
               </button>
 
               <div class="topbar-user-dropdown" id="topbarUserDropdown" style="display:none" role="menu">
-                <div class="tud-header">
-                  <div class="tud-avatar">${initial}</div>
-                  <div class="tud-meta">
-                    <div class="tud-name">${escapeHtml(userName)}</div>
-                    ${userEmail ? `<div class="tud-email">${escapeHtml(userEmail)}</div>` : ''}
-                    <span class="tud-role-chip">${escapeHtml(roleBadge)}</span>
+                <!-- Desktop Dropdown Items -->
+                <div class="tud-desktop-only">
+                  <div class="tud-header">
+                    <div class="tud-avatar">${initial}</div>
+                    <div class="tud-meta">
+                      <div class="tud-name">${escapeHtml(userName)}</div>
+                      ${userEmail ? `<div class="tud-email">${escapeHtml(userEmail)}</div>` : ''}
+                      <span class="tud-role-chip">${escapeHtml(roleBadge)}</span>
+                    </div>
+                  </div>
+                  <div class="tud-divider"></div>
+                  <div class="tud-items">
+                    <button type="button" class="tud-item" id="tudCmdBtn" role="menuitem">
+                      <span class="tud-icon">⚡</span>
+                      <span class="tud-label">Command Palette</span>
+                      <kbd class="tud-kbd">⌘K</kbd>
+                    </button>
+                    <button type="button" class="tud-item" id="tudThemeToggleBtn" role="menuitem">
+                      <span class="tud-icon">${getTheme()==='dark' ? '☀️' : '🌙'}</span>
+                      <span class="tud-label">Switch to ${getTheme()==='dark' ? 'Light' : 'Dark'} Mode</span>
+                    </button>
+                    <div class="tud-item-static">
+                      <span class="tud-icon">🛡️</span>
+                      <span class="tud-label">Session: Verified</span>
+                    </div>
+                  </div>
+                  <div class="tud-divider"></div>
+                  <div class="tud-items">
+                    <button type="button" class="tud-item danger" id="logoutBtn" role="menuitem">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                      <span class="tud-label">Sign out</span>
+                    </button>
                   </div>
                 </div>
-                <div class="tud-divider"></div>
-                <div class="tud-items">
-                  <button type="button" class="tud-item" id="tudCmdBtn" role="menuitem">
-                    <span class="tud-icon">⚡</span>
-                    <span class="tud-label">Command Palette</span>
-                    <kbd class="tud-kbd">⌘K</kbd>
-                  </button>
-                  <button type="button" class="tud-item" id="tudThemeToggleBtn" role="menuitem">
-                    <span class="tud-icon">${getTheme()==='dark' ? '☀️' : '🌙'}</span>
-                    <span class="tud-label">Switch to ${getTheme()==='dark' ? 'Light' : 'Dark'} Mode</span>
-                  </button>
-                  <div class="tud-item-static">
-                    <span class="tud-icon">🛡️</span>
-                    <span class="tud-label">Session: Verified</span>
+
+                <!-- Mobile Dropdown Popover matching User Mockup -->
+                <div class="tud-mobile-only">
+                  <div class="tud-mobile-list">
+                    <button type="button" class="tud-mobile-item" id="tudMobileNotifsBtn" role="menuitem">
+                      <div class="tmi-left">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        <span>Notifications</span>
+                      </div>
+                      <div class="tmi-right">
+                        <span class="tmi-badge" id="tudMobileNotifBadge">3</span>
+                        <svg class="tmi-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                      </div>
+                    </button>
+
+                    <button type="button" class="tud-mobile-item" id="tudMobileSettingsBtn" role="menuitem">
+                      <div class="tmi-left">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                        <span>Settings</span>
+                      </div>
+                      <div class="tmi-right">
+                        <svg class="tmi-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                      </div>
+                    </button>
+
+                    <button type="button" class="tud-mobile-item" id="tudMobileHelpBtn" role="menuitem">
+                      <div class="tmi-left">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                        <span>Help & Support</span>
+                      </div>
+                      <div class="tmi-right">
+                        <svg class="tmi-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                      </div>
+                    </button>
+
+                    <button type="button" class="tud-mobile-item danger" id="logoutBtnMobile" role="menuitem">
+                      <div class="tmi-left">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                        <span>Logout</span>
+                      </div>
+                      <div class="tmi-right">
+                        <svg class="tmi-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                      </div>
+                    </button>
                   </div>
-                </div>
-                <div class="tud-divider"></div>
-                <div class="tud-items">
-                  <button type="button" class="tud-item danger" id="logoutBtn" role="menuitem">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-                    <span class="tud-label">Sign out</span>
-                  </button>
                 </div>
               </div>
             </div>
@@ -432,15 +606,57 @@ export function renderAppShell({ user, currentRole, activeTab, tabs, title, subt
           </div>
         </div>
 
+        <!-- Main Content Area -->
         <div class="app-content">
           <div id="content"></div>
+        </div>
+
+        <!-- Mobile Bottom Navigation Dock (Matching Mockup 5 Tabs) -->
+        <nav class="mobile-bottom-nav" id="mobileBottomNav" aria-label="Mobile Navigation">
+          ${mobileNavItems.map(item => `
+            <button type="button" class="mbn-item ${item.active ? 'active' : ''}" data-tab="${item.key}" ${item.isMore ? 'id="mobileMoreBtn"' : ''}>
+              <span class="mbn-icon">${item.iconSvg}</span>
+              <span class="mbn-label">${escapeHtml(item.label)}</span>
+              ${item.active ? `<span class="mbn-active-dot"></span>` : ''}
+            </button>
+          `).join('')}
+        </nav>
+
+        <!-- Mobile More Sheet Backdrop & Slide-up Drawer -->
+        <div class="mobile-more-backdrop" id="mobileMoreBackdrop" aria-hidden="true">
+          <div class="mobile-more-sheet" id="mobileMoreSheet" role="dialog" aria-modal="true" aria-label="All Navigation Items">
+            <div class="mms-handle-wrap"><div class="mms-drag-handle"></div></div>
+            <div class="mms-header">
+              <div class="mms-title">Navigation & Actions</div>
+              <button type="button" class="mms-close-btn" id="mmsCloseBtn" aria-label="Close menu">✕</button>
+            </div>
+            <div class="mms-grid">
+              ${tabs.map(t => `
+                <button type="button" class="mms-card ${activeTab===t.key?'active':''}" data-tab="${t.key}">
+                  <span class="mms-card-icon">${t.icon || '📌'}</span>
+                  <span class="mms-card-label">${escapeHtml(t.label)}</span>
+                </button>
+              `).join('')}
+            </div>
+            <div class="mms-quick-actions">
+              <button type="button" class="btn ghost small mms-action-btn" id="mmsToggleThemeBtn">
+                <span>${getTheme()==='dark' ? '☀️ Light Mode' : '🌙 Dark Mode'}</span>
+              </button>
+              <button type="button" class="btn ghost small mms-action-btn" id="mmsNotifsBtn">
+                <span>🔔 Notifications</span>
+              </button>
+              <button type="button" class="btn ghost small danger mms-action-btn" id="mmsLogoutBtn">
+                <span>🚪 Sign Out</span>
+              </button>
+            </div>
+          </div>
         </div>
       </main>
     </div>`;
 }
 
 export function bindAppShellEvents(onTabChange){
-  // Mobile nav
+  // Mobile nav (sidebar)
   const mobileToggle = document.getElementById('mobileNavToggle');
   const sidebar      = document.getElementById('appSidebar');
   const overlay      = document.getElementById('sidebarOverlay');
@@ -456,6 +672,131 @@ export function bindAppShellEvents(onTabChange){
 
   if(mobileToggle) mobileToggle.onclick = openSidebar;
   if(overlay) overlay.onclick = closeSidebar;
+
+  // Mobile More Sheet Drawer
+  const moreBackdrop = document.getElementById('mobileMoreBackdrop');
+  const moreSheet = document.getElementById('mobileMoreSheet');
+  const moreCloseBtn = document.getElementById('mmsCloseBtn');
+  const mobileMoreBtn = document.getElementById('mobileMoreBtn');
+
+  function openMoreSheet(){
+    if(moreBackdrop) moreBackdrop.classList.add('active');
+    if(moreSheet) moreSheet.classList.add('active');
+  }
+  function closeMoreSheet(){
+    if(moreBackdrop) moreBackdrop.classList.remove('active');
+    if(moreSheet) moreSheet.classList.remove('active');
+  }
+
+  if(mobileMoreBtn) mobileMoreBtn.onclick = (e)=>{ e.stopPropagation(); openMoreSheet(); };
+  if(moreCloseBtn) moreCloseBtn.onclick = closeMoreSheet;
+  if(moreBackdrop) moreBackdrop.onclick = (e)=>{ if(e.target === moreBackdrop) closeMoreSheet(); };
+
+  // Bottom Navigation Bar items
+  document.querySelectorAll('.mbn-item').forEach(btn => {
+    if(btn.dataset.tab && btn.dataset.tab !== '__more__'){
+      btn.onclick = () => {
+        closeMoreSheet();
+        if(onTabChange) onTabChange(btn.dataset.tab);
+      };
+    }
+  });
+
+  // Mobile More Sheet tab cards
+  document.querySelectorAll('.mms-card').forEach(card => {
+    card.onclick = () => {
+      closeMoreSheet();
+      if(onTabChange) onTabChange(card.dataset.tab);
+    };
+  });
+
+  // Mobile More Sheet quick actions
+  const mmsThemeBtn = document.getElementById('mmsToggleThemeBtn');
+  if(mmsThemeBtn){
+    mmsThemeBtn.onclick = () => {
+      const nextTheme = getTheme() === 'dark' ? 'light' : 'dark';
+      setTheme(nextTheme);
+      const span = mmsThemeBtn.querySelector('span');
+      if(span) span.textContent = nextTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+    };
+  }
+  const mmsNotifsBtn = document.getElementById('mmsNotifsBtn');
+  if(mmsNotifsBtn){
+    mmsNotifsBtn.onclick = () => {
+      closeMoreSheet();
+      const bell = document.getElementById('notifBellBtn');
+      if(bell) bell.click();
+    };
+  }
+  const mmsLogoutBtn = document.getElementById('mmsLogoutBtn');
+  if(mmsLogoutBtn) mmsLogoutBtn.onclick = logout;
+
+  // Mobile Calendar Button in Header
+  const mobileCalBtn = document.getElementById('mobileCalBtn');
+  if(mobileCalBtn){
+    mobileCalBtn.onclick = () => {
+      const periodRow = document.querySelector('.period-row');
+      if(periodRow){
+        periodRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        periodRow.classList.add('pulse-highlight');
+        setTimeout(() => periodRow.classList.remove('pulse-highlight'), 1200);
+      }
+    };
+  }
+
+  // Mobile User Popover Actions
+  const tudMobileNotifsBtn = document.getElementById('tudMobileNotifsBtn');
+  if(tudMobileNotifsBtn){
+    tudMobileNotifsBtn.onclick = (e) => {
+      e.stopPropagation();
+      const userDropdown = document.getElementById('topbarUserDropdown');
+      if(userDropdown) userDropdown.style.display = 'none';
+      const bell = document.getElementById('notifBellBtn');
+      if(bell) bell.click();
+    };
+  }
+
+  const tudMobileSettingsBtn = document.getElementById('tudMobileSettingsBtn');
+  if(tudMobileSettingsBtn){
+    tudMobileSettingsBtn.onclick = (e) => {
+      e.stopPropagation();
+      const userDropdown = document.getElementById('topbarUserDropdown');
+      if(userDropdown) userDropdown.style.display = 'none';
+      const manageTab = document.querySelector('[data-tab="manage"]');
+      if(manageTab && onTabChange) {
+        onTabChange('manage');
+      } else {
+        openMoreSheet();
+      }
+    };
+  }
+
+  const tudMobileHelpBtn = document.getElementById('tudMobileHelpBtn');
+  if(tudMobileHelpBtn){
+    tudMobileHelpBtn.onclick = (e) => {
+      e.stopPropagation();
+      const userDropdown = document.getElementById('topbarUserDropdown');
+      if(userDropdown) userDropdown.style.display = 'none';
+      const ticketsTab = document.querySelector('[data-tab="tickets"]');
+      if(ticketsTab && onTabChange) {
+        onTabChange('tickets');
+      } else {
+        openModal(`
+          <div style="padding:24px;text-align:center;">
+            <div style="font-size:36px;margin-bottom:12px;">💬</div>
+            <h3 style="margin-bottom:8px;font-size:18px;color:var(--text-1)">CI360 Help & Support</h3>
+            <p style="font-size:13px;color:var(--text-3);line-height:1.5;margin-bottom:20px;">
+              For immediate technical assistance, client onboarding, or support tickets, reach out to your system administrator or use the Support Tickets portal.
+            </p>
+            <button class="btn primary full" type="button" onclick="this.closest('.modal-bg').remove()">Close</button>
+          </div>
+        `);
+      }
+    };
+  }
+
+  const logoutBtnMobile = document.getElementById('logoutBtnMobile');
+  if(logoutBtnMobile) logoutBtnMobile.onclick = logout;
 
   // User Dropdown Menu
   const userBtn = document.getElementById('topbarUserBtn');

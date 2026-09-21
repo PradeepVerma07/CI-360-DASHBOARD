@@ -104,35 +104,70 @@ async function tabDashboard(c){
   dash = await apiGet('/dashboard/admin?period=' + ui.period);
   const o = dash.overview;
   c.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;flex-wrap:wrap;gap:12px;">
-      <div>
+    <div class="dash-overview-header">
+      <div class="dash-overview-title-wrap">
         <h2 style="font-size:22px;font-weight:700;color:var(--navy-900);margin:0 0 2px 0;">Dashboard Overview</h2>
         <p style="font-size:13px;color:var(--text-3);margin:0;">Real-time workload, capacity, and deliverable performance</p>
       </div>
       ${periodPicker()}
     </div>
 
-    <section class="block">
+    <section class="block block-kpi-grid">
       <div class="grid grid-4">
-        <div class="card kpi">
-          <div class="label">Work Value Tracked <span>💼</span></div>
+        <div class="card kpi kpi-work-val">
+          <div class="kpi-mobile-header">
+            <div class="kpi-mobile-badge kpi-purple-badge">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+            </div>
+            <div class="label">Work Value Tracked <span class="kpi-mini-icon">📊</span></div>
+          </div>
           <div class="value">${fmtINR(o.totalValue)}</div>
           <div class="sub">across ${o.activeClients} of ${o.totalClients} active clients</div>
+          <svg class="kpi-spark-wave purple-wave" viewBox="0 0 100 40" preserveAspectRatio="none">
+            <path d="M0,35 Q25,38 45,26 T80,16 T100,10" fill="none" stroke="#8b5cf6" stroke-width="3" stroke-linecap="round"/>
+          </svg>
         </div>
-        <div class="card kpi">
-          <div class="label">Jobs Logged <span>📋</span></div>
+
+        <div class="card kpi kpi-jobs-logged">
+          <div class="kpi-mobile-header">
+            <div class="kpi-mobile-badge kpi-green-badge">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+            </div>
+            <div class="label">Jobs Logged <span class="kpi-mini-icon">📄</span></div>
+          </div>
           <div class="value">${o.totalJobs}</div>
           <div class="sub">${fmtHours(o.totalHours)} of effort tracked</div>
+          <svg class="kpi-spark-wave green-wave" viewBox="0 0 100 40" preserveAspectRatio="none">
+            <path d="M0,35 Q30,35 60,30 T85,15 T100,10" fill="none" stroke="#10b981" stroke-width="3" stroke-linecap="round"/>
+          </svg>
         </div>
-        <div class="card kpi">
-          <div class="label">Overworked <span>⚠️</span></div>
+
+        <div class="card kpi kpi-overworked">
+          <div class="kpi-mobile-header">
+            <div class="kpi-mobile-badge kpi-amber-badge">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </div>
+            <div class="label">Overworked <span class="kpi-mini-icon">⚠️</span></div>
+          </div>
           <div class="value" style="color:var(--red)">${o.overworked}</div>
           <div class="sub">team members above 115% capacity</div>
+          <svg class="kpi-spark-wave amber-wave" viewBox="0 0 100 40" preserveAspectRatio="none">
+            <path d="M0,35 Q20,38 40,25 T70,30 T100,12" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+          </svg>
         </div>
-        <div class="card kpi">
-          <div class="label">Underused Capacity <span>📉</span></div>
+
+        <div class="card kpi kpi-underused">
+          <div class="kpi-mobile-header">
+            <div class="kpi-mobile-badge kpi-rose-badge">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline></svg>
+            </div>
+            <div class="label">Underused Capacity <span class="kpi-mini-icon">📉</span></div>
+          </div>
           <div class="value" style="color:var(--blue)">${o.underused}</div>
           <div class="sub">team members below 55% capacity</div>
+          <svg class="kpi-spark-wave rose-wave" viewBox="0 0 100 40" preserveAspectRatio="none">
+            <path d="M0,35 Q25,35 45,28 T70,32 T100,14" fill="none" stroke="#f43f5e" stroke-width="3" stroke-linecap="round"/>
+          </svg>
         </div>
       </div>
     </section>

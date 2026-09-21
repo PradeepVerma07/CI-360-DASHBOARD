@@ -1347,6 +1347,7 @@ app.use("/api/dashboard", require_dashboard());
 app.use("/api/notifications", require_notifications());
 app.use("/api/tickets", require_tickets());
 app.use("/api/tasks", require("./routes/tasks"));
+var fs = require("fs");
 var webDistPath = path.join(__dirname, "../web/dist");
 var webSrcPath = path.join(__dirname, "../web");
 
