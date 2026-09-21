@@ -2000,7 +2000,7 @@ app.get("/", (req, res) => {
   res.sendFile(getHtmlFile("login.html"));
 });
 
-app.get("/api/health", (req, res) => res.json({ ok: true, time: /* @__PURE__ */ new Date() }));
+app.get("/api/health", (req, res) => res.json({ ok: true, version: "2.2.0-tasks-tickets", routes: ["tasks", "tickets", "jobs", "users", "personnel", "clients"], time: /* @__PURE__ */ new Date() }));
 
 // Fallback for SPA routing
 app.get("*", (req, res) => {
