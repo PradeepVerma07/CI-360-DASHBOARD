@@ -1969,8 +1969,50 @@ app.use("/api/upload", require_upload());
 app.use("/api/tasks", require("./routes/tasks"));
 
 var webDistPath = path.join(__dirname, "../web/dist");
-app.use(express.static(webDistPath));
-app.get("/", (req, res) => res.json({ ok: true, message: "CI360 Productivity Suite Backend API is running" }));
+var webSrcPath = path.join(__dirname, "../web");
+
+if (fs.existsSync(webDistPath)) {
+  app.use(express.static(webDistPath));
+}
+if (fs.existsSync(webSrcPath)) {
+  app.use(express.static(webSrcPath));
+}
+
+function getHtmlFile(name) {
+  var distFile = path.join(webDistPath, name);
+  if (fs.existsSync(distFile)) return distFile;
+  var srcFile = path.join(webSrcPath, name);
+  if (fs.existsSync(srcFile)) return srcFile;
+  return distFile;
+}
+
+// Clean HTML Route shortcuts
+app.get("/login", (req, res) => res.sendFile(getHtmlFile("login.html")));
+app.get("/admin", (req, res) => res.sendFile(getHtmlFile("admin.html")));
+app.get("/employee", (req, res) => res.sendFile(getHtmlFile("employee.html")));
+app.get("/client", (req, res) => res.sendFile(getHtmlFile("client.html")));
+
+app.get("/", (req, res) => {
+  var indexFile = getHtmlFile("index.html");
+  if (fs.existsSync(indexFile)) {
+    return res.sendFile(indexFile);
+  }
+  res.sendFile(getHtmlFile("login.html"));
+});
+
 app.get("/api/health", (req, res) => res.json({ ok: true, time: /* @__PURE__ */ new Date() }));
+
+// Fallback for SPA routing
+app.get("*", (req, res) => {
+  if (req.path.startsWith("/api") || req.path.startsWith("/uploads")) {
+    return res.status(404).json({ error: "Endpoint not found" });
+  }
+  var indexFile = getHtmlFile("index.html");
+  if (fs.existsSync(indexFile)) {
+    return res.sendFile(indexFile);
+  }
+  res.sendFile(getHtmlFile("login.html"));
+});
+
 var PORT = process.env.PORT || 4e3;
 app.listen(PORT, () => console.log(`CI360 backend server running on http://localhost:${PORT}`));
