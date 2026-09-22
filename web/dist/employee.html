@@ -7,6 +7,13 @@
 <script>
   (function(){
     try {
+      if(window.location.pathname.endsWith('.html')){
+        var cleanPath = window.location.pathname.slice(0, -5);
+        if(cleanPath === '/index') cleanPath = '/';
+        window.history.replaceState(null, '', (cleanPath || '/') + window.location.search + window.location.hash);
+      }
+    } catch(e){}
+    try {
       var t = localStorage.getItem('ci360_theme') || 'light';
       document.documentElement.setAttribute('data-theme', t);
     } catch(e){}
@@ -19,8 +26,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CI360">
 <link rel="apple-touch-icon" href="/logo.png">
-  <script type="module" crossorigin src="/assets/employee-CyrGNGnW.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/api-BzaZgzXr.js">
+  <script type="module" crossorigin src="/assets/employee-BCi6nfwS.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/api-CiWcL8sY.js">
   <link rel="stylesheet" crossorigin href="/assets/api-BkGhklaE.css">
 </head>
 <body>

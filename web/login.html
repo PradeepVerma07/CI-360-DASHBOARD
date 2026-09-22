@@ -15,6 +15,17 @@
   <meta name="apple-mobile-web-app-title" content="CI360">
   <link rel="apple-touch-icon" href="/logo.png">
   <link rel="stylesheet" href="/src/css/style.css">
+  <script>
+    (function(){
+      try {
+        if(window.location.pathname.endsWith('.html')){
+          var cleanPath = window.location.pathname.slice(0, -5);
+          if(cleanPath === '/index') cleanPath = '/';
+          window.history.replaceState(null, '', (cleanPath || '/') + window.location.search + window.location.hash);
+        }
+      } catch(e){}
+    })();
+  </script>
 
   <style>
     /* ── ULTRA-PREMIUM MODERN LOGIN UI ─────────────────────────────── */
@@ -665,7 +676,7 @@
   (function(){
     const u = getUser();
     if(u && getToken()){
-      window.location.href = u.role==='superadmin' ? '/admin.html' : (u.role==='employee' ? '/employee.html' : '/client.html');
+      window.location.href = u.role==='superadmin' ? '/admin' : (u.role==='employee' ? '/employee' : '/client');
     }
   })();
 
@@ -734,7 +745,7 @@
       }
       const data = await apiPost('/auth/login', { email, password });
       setSession(data.token, data.user);
-      window.location.href = data.user.role === 'superadmin' ? '/admin.html' : (data.user.role === 'employee' ? '/employee.html' : '/client.html');
+      window.location.href = data.user.role === 'superadmin' ? '/admin' : (data.user.role === 'employee' ? '/employee' : '/client');
     } catch(err) {
       errMsg.textContent = err.message || 'Invalid credentials. Please check and try again.';
       errBox.style.display = 'flex';

@@ -2,7 +2,7 @@
   "name": "CI360 Productivity Intelligence",
   "short_name": "CI360",
   "description": "Enterprise productivity, job logging, work delivery, and team intelligence platform.",
-  "start_url": "/login.html",
+  "start_url": "/login",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",

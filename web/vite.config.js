@@ -15,6 +15,21 @@ export default defineConfig({
       },
     },
   },
+  plugins: [
+    {
+      name: 'clean-urls-dev',
+      configureServer(server) {
+        server.middlewares.use((req, res, next) => {
+          const rawUrl = req.url ? req.url.split('?')[0] : '';
+          if (rawUrl === '/login') req.url = req.url.replace('/login', '/login.html');
+          else if (rawUrl === '/admin') req.url = req.url.replace('/admin', '/admin.html');
+          else if (rawUrl === '/employee') req.url = req.url.replace('/employee', '/employee.html');
+          else if (rawUrl === '/client') req.url = req.url.replace('/client', '/client.html');
+          next();
+        });
+      },
+    },
+  ],
   build: {
     rollupOptions: {
       input: {

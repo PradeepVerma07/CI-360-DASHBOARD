@@ -7,6 +7,13 @@
 <script>
   (function(){
     try {
+      if(window.location.pathname.endsWith('.html')){
+        var cleanPath = window.location.pathname.slice(0, -5);
+        if(cleanPath === '/index') cleanPath = '/';
+        window.history.replaceState(null, '', (cleanPath || '/') + window.location.search + window.location.hash);
+      }
+    } catch(e){}
+    try {
       var t = localStorage.getItem('ci360_theme') || 'light';
       document.documentElement.setAttribute('data-theme', t);
     } catch(e){}

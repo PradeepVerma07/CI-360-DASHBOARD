@@ -1,7 +1,9 @@
-# API calls go to Netlify serverless function
-/api/*  /.netlify/functions/api/:splat  200
-
-# Root goes to login
-/  /login.html  302
-
-# All other routes serve their own HTML (don't override real files)
+# Netlify / Cloudflare Pages clean URLs
+/login      /login.html      200
+/admin      /admin.html      200
+/employee   /employee.html   200
+/client     /client.html     200
+/login.html /login           301
+/admin.html /admin           301
+/employee.html /employee     301
+/client.html /client         301

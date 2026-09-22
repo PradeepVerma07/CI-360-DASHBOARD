@@ -1971,13 +1971,6 @@ app.use("/api/tasks", require("./routes/tasks"));
 var webDistPath = path.join(__dirname, "../web/dist");
 var webSrcPath = path.join(__dirname, "../web");
 
-if (fs.existsSync(webDistPath)) {
-  app.use(express.static(webDistPath));
-}
-if (fs.existsSync(webSrcPath)) {
-  app.use(express.static(webSrcPath));
-}
-
 function getHtmlFile(name) {
   var distFile = path.join(webDistPath, name);
   if (fs.existsSync(distFile)) return distFile;
@@ -1986,11 +1979,29 @@ function getHtmlFile(name) {
   return distFile;
 }
 
-// Clean HTML Route shortcuts
+// Redirect .html URLs to clean extensionless URLs (e.g., /admin.html -> /admin)
+app.use((req, res, next) => {
+  if (req.method === "GET" && req.path.endsWith(".html")) {
+    let cleanPath = req.path.slice(0, -5);
+    if (cleanPath === "/index") cleanPath = "/";
+    const query = req.url.slice(req.path.length);
+    return res.redirect(301, (cleanPath || "/") + query);
+  }
+  next();
+});
+
+// Clean HTML Route shortcuts (without .html extension)
 app.get("/login", (req, res) => res.sendFile(getHtmlFile("login.html")));
 app.get("/admin", (req, res) => res.sendFile(getHtmlFile("admin.html")));
 app.get("/employee", (req, res) => res.sendFile(getHtmlFile("employee.html")));
 app.get("/client", (req, res) => res.sendFile(getHtmlFile("client.html")));
+
+if (fs.existsSync(webDistPath)) {
+  app.use(express.static(webDistPath));
+}
+if (fs.existsSync(webSrcPath)) {
+  app.use(express.static(webSrcPath));
+}
 
 app.get("/", (req, res) => {
   var indexFile = getHtmlFile("index.html");

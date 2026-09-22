@@ -1,3 +1,14 @@
+// Remove .html extension from browser address bar cleanly
+(function cleanHtmlFromUrl(){
+  try {
+    if (typeof window !== 'undefined' && window.location.pathname.endsWith('.html')) {
+      let cleanPath = window.location.pathname.slice(0, -5);
+      if (cleanPath === '/index') cleanPath = '/';
+      window.history.replaceState(null, '', (cleanPath || '/') + window.location.search + window.location.hash);
+    }
+  } catch(e){}
+})();
+
 // Thin fetch wrapper shared by all dashboards.
 const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
@@ -9,9 +20,9 @@ export function clearSession(){ localStorage.removeItem('ci360_token'); localSto
 export function requireAuth(expectedRole){
   const token = getToken();
   const user = getUser();
-  if(!token || !user){ window.location.href = '/login.html'; return null; }
+  if(!token || !user){ window.location.href = '/login'; return null; }
   if(expectedRole && user.role !== expectedRole && user.role !== 'superadmin'){
-    window.location.href = user.role === 'superadmin' ? '/admin.html' : (user.role === 'employee' ? '/employee.html' : '/client.html');
+    window.location.href = user.role === 'superadmin' ? '/admin' : (user.role === 'employee' ? '/employee' : '/client');
     return null;
   }
   return user;
@@ -22,7 +33,7 @@ export async function api(path, options={}){
   const headers = Object.assign({'Content-Type':'application/json'}, options.headers||{});
   if(token) headers['Authorization'] = 'Bearer ' + token;
   const res = await fetch(API_BASE + path, Object.assign({}, options, {headers}));
-  if(res.status === 401){ clearSession(); window.location.href = '/login.html'; throw new Error('Session expired'); }
+  if(res.status === 401){ clearSession(); window.location.href = '/login'; throw new Error('Session expired'); }
   let data = null;
   try{ data = await res.json(); }catch(e){ /* no body or non-JSON body */ }
   if(!res.ok){ throw new Error((data && data.error) || ('Server status ' + res.status + ' — Backend waking up, please retry in 10s.')); }
@@ -121,7 +132,7 @@ export function openModal(html){
   return bg;
 }
 
-export function logout(){ clearSession(); window.location.href = '/login.html'; }
+export function logout(){ clearSession(); window.location.href = '/login'; }
 
 /* ── NOTIFICATION ENGINE & SOUND/VIBRATION ───────────────────── */
 let swRegistration = null;
