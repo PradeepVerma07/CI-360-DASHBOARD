@@ -86,6 +86,7 @@ export function renderNotificationBell(){
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
         <span id="notifBadge" class="notif-badge" style="display:none">0</span>
       </button>
+      <div id="notifBackdrop" class="notif-backdrop" style="display:none"></div>
       <div id="notifDropdown" class="notif-dropdown" style="display:none">
         <div class="notif-dropdown-header">
           <strong>🔔 Notifications <span id="notifUnreadBadge" style="font-size:11px;font-weight:700;color:var(--brand-500)"></span></strong>
@@ -188,9 +189,15 @@ export function initNotificationBell(){
           item.classList.remove('unread');
           try { await api(`/notifications/${id}/read`, { method: 'PATCH' }); } catch(e){}
         }
+        closeDropdown();
         if(type && type.includes('task') && typeof window.ci360NavTab === 'function') {
-          dropdown.style.display = 'none';
           window.ci360NavTab('dailytasks');
+        } else if(type && type.includes('job') && typeof window.ci360NavTab === 'function') {
+          window.ci360NavTab('jobs');
+        } else if(type && type.includes('ticket') && typeof window.ci360NavTab === 'function') {
+          window.ci360NavTab('tickets');
+        } else if(type && type.includes('target') && typeof window.ci360NavTab === 'function') {
+          window.ci360NavTab('targets');
         }
       };
     });
@@ -226,23 +233,60 @@ export function initNotificationBell(){
     };
   });
 
+  const backdrop = document.getElementById('notifBackdrop');
+
+  function openDropdown(){
+    dropdown.style.display = 'flex';
+    dropdown.classList.add('open');
+    if(backdrop){
+      backdrop.style.display = 'block';
+      backdrop.classList.add('open');
+    }
+    bellBtn.setAttribute('aria-expanded', 'true');
+    const userDropdown = document.getElementById('topbarUserDropdown');
+    if(userDropdown) userDropdown.style.display = 'none';
+    fetchNotifications();
+  }
+
+  function closeDropdown(){
+    dropdown.style.display = 'none';
+    dropdown.classList.remove('open');
+    if(backdrop){
+      backdrop.style.display = 'none';
+      backdrop.classList.remove('open');
+    }
+    bellBtn.setAttribute('aria-expanded', 'false');
+  }
+
+  function toggleDropdown(){
+    const isOpen = dropdown.classList.contains('open') || dropdown.style.display === 'flex' || dropdown.style.display === 'block';
+    if(isOpen){
+      closeDropdown();
+    } else {
+      openDropdown();
+    }
+  }
+
+  window.ci360CloseNotifications = closeDropdown;
+
   const notifCloseBtn = document.getElementById('notifCloseBtn');
   if(notifCloseBtn){
     notifCloseBtn.onclick = (e) => {
       e.stopPropagation();
-      dropdown.style.display = 'none';
+      closeDropdown();
+    };
+  }
+
+  if(backdrop){
+    backdrop.onclick = (e) => {
+      e.stopPropagation();
+      closeDropdown();
     };
   }
 
   bellBtn.onclick = (e)=>{
     e.stopPropagation();
-    const userDropdown = document.getElementById('topbarUserDropdown');
-    if(userDropdown) userDropdown.style.display = 'none';
-    const showing = dropdown.style.display === 'block';
-    dropdown.style.display = showing ? 'none' : 'block';
-    if(!showing){
-      fetchNotifications();
-    }
+    toggleDropdown();
   };
 
   if(markReadBtn){
@@ -821,8 +865,9 @@ export function bindAppShellEvents(onTabChange){
       const isOpen = userDropdown.style.display !== 'none';
       userDropdown.style.display = isOpen ? 'none' : 'block';
       userBtn.setAttribute('aria-expanded', String(!isOpen));
-      const notifDropdown = document.getElementById('notifDropdown');
-      if(notifDropdown) notifDropdown.style.display = 'none';
+      if(typeof window.ci360CloseNotifications === 'function'){
+        window.ci360CloseNotifications();
+      }
     };
 
     document.addEventListener('click', (e) => {

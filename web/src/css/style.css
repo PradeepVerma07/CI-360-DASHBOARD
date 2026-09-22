@@ -1032,6 +1032,10 @@ textarea {
   display: none;
 }
 
+.notif-backdrop {
+  display: none;
+}
+
 .notif-filters {
   display: flex;
   gap: 4px;
@@ -2808,10 +2812,36 @@ td select:focus {
     box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85) !important;
     z-index: 1050 !important;
     max-height: calc(100vh - 136px) !important;
-    display: flex !important;
     flex-direction: column !important;
     overflow: hidden !important;
     animation: dropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  }
+
+  /* Must hide when closed */
+  .notif-dropdown[style*="display: none"],
+  .notif-dropdown[style*="display:none"],
+  .notif-dropdown:not(.open)[style*="display:none"],
+  .notif-dropdown:not(.open)[style*="display: none"] {
+    display: none !important;
+  }
+
+  .notif-dropdown.open {
+    display: flex !important;
+  }
+
+  /* Mobile Backdrop (Tap outside to close) */
+  .notif-backdrop {
+    display: none;
+    position: fixed !important;
+    inset: 0 !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    backdrop-filter: blur(2px) !important;
+    -webkit-backdrop-filter: blur(2px) !important;
+    z-index: 1040 !important;
+  }
+
+  .notif-backdrop.open {
+    display: block !important;
   }
 
   .notif-dropdown-header {
