@@ -1028,6 +1028,10 @@ textarea {
   gap: 6px;
 }
 
+.notif-mobile-close {
+  display: none;
+}
+
 .notif-filters {
   display: flex;
   gap: 4px;
@@ -2787,6 +2791,152 @@ td select:focus {
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75) !important;
     padding: 6px !important;
     z-index: 1000 !important;
+  }
+
+  /* Mobile Notifications Dropdown Panel (Fixed & Centered: Cannot Cut Off) */
+  .notif-dropdown {
+    position: fixed !important;
+    top: 58px !important;
+    left: 10px !important;
+    right: 10px !important;
+    width: auto !important;
+    max-width: calc(100vw - 20px) !important;
+    margin: 0 auto !important;
+    background: #0f1422 !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85) !important;
+    z-index: 1050 !important;
+    max-height: calc(100vh - 136px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    animation: dropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  }
+
+  .notif-dropdown-header {
+    padding: 12px 14px !important;
+    background: #141a29 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-shrink: 0 !important;
+  }
+
+  .notif-dropdown-header strong {
+    font-size: 13.5px !important;
+    color: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+
+  .notif-mobile-close {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 26px !important;
+    height: 26px !important;
+    border-radius: 50% !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    color: #94a3b8 !important;
+    font-size: 12px !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    margin-left: 6px !important;
+    transition: background 0.15s ease !important;
+  }
+
+  .notif-mobile-close:active {
+    background: rgba(255, 255, 255, 0.2) !important;
+    color: #ffffff !important;
+  }
+
+  .notif-filters {
+    display: flex !important;
+    gap: 6px !important;
+    padding: 8px 12px !important;
+    background: #0f1422 !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex-shrink: 0 !important;
+  }
+
+  .notif-filters::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .notif-filter-btn {
+    padding: 4px 10px !important;
+    border-radius: 20px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: #94a3b8 !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    flex-shrink: 0 !important;
+    cursor: pointer !important;
+  }
+
+  .notif-filter-btn.active {
+    background: #4F46E5 !important;
+    border-color: #6366F1 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+  }
+
+  .notif-list {
+    flex: 1 1 auto !important;
+    max-height: calc(100vh - 250px) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+  }
+
+  .notif-item {
+    padding: 12px 14px !important;
+    display: flex !important;
+    gap: 10px !important;
+    align-items: flex-start !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  }
+
+  .notif-item .notif-icon {
+    font-size: 16px !important;
+    width: 28px !important;
+    height: 28px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    flex-shrink: 0 !important;
+  }
+
+  .notif-item span[style*="font-weight:700"] {
+    font-size: 12.5px !important;
+    color: #ffffff !important;
+    line-height: 1.3 !important;
+    word-break: break-word !important;
+  }
+
+  .notif-item span[style*="white-space:nowrap"] {
+    font-size: 10px !important;
+    color: #64748b !important;
+    flex-shrink: 0 !important;
+  }
+
+  .notif-item div[style*="color:var(--text-3)"] {
+    font-size: 11.5px !important;
+    color: #94a3b8 !important;
+    line-height: 1.4 !important;
+    word-break: break-word !important;
   }
 
   .tud-mobile-list {

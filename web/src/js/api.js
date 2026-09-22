@@ -92,6 +92,7 @@ export function renderNotificationBell(){
           <div style="display:flex;gap:6px;align-items:center">
             <button id="markAllReadBtn" type="button" class="btn ghost small" style="font-size:10.5px;padding:2px 7px;">Mark Read</button>
             <button id="clearNotifBtn" type="button" class="btn ghost small" style="font-size:10.5px;padding:2px 7px;">Clear</button>
+            <button id="notifCloseBtn" type="button" class="notif-mobile-close" aria-label="Close notifications">✕</button>
           </div>
         </div>
         <div class="notif-filters">
@@ -225,8 +226,18 @@ export function initNotificationBell(){
     };
   });
 
+  const notifCloseBtn = document.getElementById('notifCloseBtn');
+  if(notifCloseBtn){
+    notifCloseBtn.onclick = (e) => {
+      e.stopPropagation();
+      dropdown.style.display = 'none';
+    };
+  }
+
   bellBtn.onclick = (e)=>{
     e.stopPropagation();
+    const userDropdown = document.getElementById('topbarUserDropdown');
+    if(userDropdown) userDropdown.style.display = 'none';
     const showing = dropdown.style.display === 'block';
     dropdown.style.display = showing ? 'none' : 'block';
     if(!showing){
