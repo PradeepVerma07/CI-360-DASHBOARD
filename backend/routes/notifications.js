@@ -133,4 +133,21 @@ router.delete('/', async (req, res) => {
   }
 });
 
+// POST /api/notifications/test
+router.post('/test', async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const testNotif = await Notification.create({
+      userId,
+      type: 'test_alert',
+      title: '🔔 CI360 Alert Test',
+      message: `Test notification successfully delivered to your device at ${new Date().toLocaleTimeString()}!`,
+      read: false
+    });
+    res.json({ success: true, notification: testNotif });
+  } catch (err) {
+    res.status(500).json({ error: 'Could not create test notification', detail: err.message });
+  }
+});
+
 module.exports = router;

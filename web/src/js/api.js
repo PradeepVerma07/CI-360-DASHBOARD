@@ -123,6 +123,148 @@ export function openModal(html){
 
 export function logout(){ clearSession(); window.location.href = '/login.html'; }
 
+/* ── NOTIFICATION ENGINE & SOUND/VIBRATION ───────────────────── */
+let swRegistration = null;
+
+export async function initServiceWorker(){
+  if('serviceWorker' in navigator){
+    try{
+      swRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      console.log('CI360 Service Worker active:', swRegistration.scope);
+    }catch(err){
+      console.warn('CI360 Service Worker registration notice:', err);
+    }
+  }
+}
+
+// Auto-register service worker on load
+try {
+  initServiceWorker();
+} catch(e){}
+
+export function playNotificationChime(){
+  try{
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if(!AudioCtx) return;
+    const ctx = new AudioCtx();
+    if(ctx.state === 'suspended') ctx.resume();
+    const now = ctx.currentTime;
+
+    // Harmonic 1: 587.33 Hz (D5)
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, now);
+    gain1.gain.setValueAtTime(0, now);
+    gain1.gain.linearRampToValueAtTime(0.2, now + 0.02);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.35);
+
+    // Harmonic 2: 880 Hz (A5) with slight offset
+    const osc2 = ctx.createOscillator();
+    const gain2 = ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(880, now + 0.12);
+    gain2.gain.setValueAtTime(0, now + 0.12);
+    gain2.gain.linearRampToValueAtTime(0.22, now + 0.14);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(now + 0.12);
+    osc2.stop(now + 0.55);
+  }catch(e){
+    // AudioContext blocked by browser autoplay policy until user gesture
+  }
+}
+
+export function triggerPhoneVibration(){
+  try{
+    if('vibrate' in navigator){
+      navigator.vibrate([150, 80, 150]);
+    }
+  }catch(e){}
+}
+
+export async function requestNotificationPermission(){
+  if(!('Notification' in window)){
+    flashToast('Your browser does not support notifications.', true);
+    return false;
+  }
+  try{
+    const perm = await Notification.requestPermission();
+    const banner = document.getElementById('notifPermissionBanner');
+    if(perm === 'granted'){
+      if(banner) banner.style.display = 'none';
+      flashToast('Notifications enabled for this device!');
+      await triggerSystemNotification({
+        title: 'CI360 Notifications Active 🔔',
+        message: 'You will now receive instant alerts on this phone & browser for jobs and tasks.',
+        tag: 'ci360-active'
+      });
+      return true;
+    } else {
+      if(banner) banner.style.display = 'flex';
+      flashToast('Notification permission was declined.', true);
+      return false;
+    }
+  }catch(e){
+    console.error('Notification permission request error:', e);
+  }
+  return false;
+}
+
+export async function triggerSystemNotification({ title, message, type, id, url }){
+  // Play sound & phone vibration
+  playNotificationChime();
+  triggerPhoneVibration();
+
+  if(!('Notification' in window) || Notification.permission !== 'granted'){
+    return;
+  }
+
+  const options = {
+    body: message || 'You have a new update in CI360.',
+    icon: '/logo.png',
+    badge: '/logo.png',
+    tag: id || 'ci360-' + Date.now(),
+    renotify: true,
+    vibrate: [150, 80, 150],
+    data: {
+      url: url || window.location.href,
+      type: type || 'general'
+    }
+  };
+
+  // Primary: Service Worker showNotification (supports Android phone lockscreen & desktop)
+  try{
+    if(swRegistration && swRegistration.showNotification){
+      await swRegistration.showNotification(title, options);
+      return;
+    }
+    const readyReg = await navigator.serviceWorker?.ready;
+    if(readyReg && readyReg.showNotification){
+      await readyReg.showNotification(title, options);
+      return;
+    }
+  }catch(err){
+    console.warn('Service Worker notification dispatch:', err);
+  }
+
+  // Fallback: Standard window Notification constructor
+  try{
+    const n = new Notification(title, options);
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
+  }catch(e){
+    console.warn('Window Notification fallback notice:', e);
+  }
+}
+
 /* ── NOTIFICATION BELL ───────────────────────────────────────── */
 export function renderNotificationBell(){
   return `
@@ -136,11 +278,24 @@ export function renderNotificationBell(){
         <div class="notif-dropdown-header">
           <strong>🔔 Notifications <span id="notifUnreadBadge" style="font-size:11px;font-weight:700;color:var(--brand-500)"></span></strong>
           <div style="display:flex;gap:6px;align-items:center">
+            <button id="testNotifBtn" type="button" class="btn ghost small" style="font-size:10.5px;padding:2px 7px;" title="Test notification delivery on this phone/browser">🧪 Test</button>
             <button id="markAllReadBtn" type="button" class="btn ghost small" style="font-size:10.5px;padding:2px 7px;">Mark Read</button>
             <button id="clearNotifBtn" type="button" class="btn ghost small" style="font-size:10.5px;padding:2px 7px;">Clear</button>
             <button id="notifCloseBtn" type="button" class="notif-mobile-close" aria-label="Close notifications">✕</button>
           </div>
         </div>
+
+        <div id="notifPermissionBanner" class="notif-perm-banner" style="display:none">
+          <div class="npb-content">
+            <span class="npb-icon">🔔</span>
+            <div class="npb-text">
+              <strong>Enable Phone & Browser Alerts</strong>
+              <span>Get notified on this device when jobs or tasks are updated.</span>
+            </div>
+          </div>
+          <button type="button" class="btn primary small npb-btn" id="notifEnableBtn">Enable</button>
+        </div>
+
         <div class="notif-filters">
           <button type="button" class="notif-filter-btn active" data-filter="all">All</button>
           <button type="button" class="notif-filter-btn" data-filter="task">✅ Tasks</button>
@@ -162,8 +317,42 @@ export function initNotificationBell(){
   const list      = document.getElementById('notifList');
   const clearBtn  = document.getElementById('clearNotifBtn');
   const markReadBtn = document.getElementById('markAllReadBtn');
+  const testNotifBtn = document.getElementById('testNotifBtn');
+  const notifEnableBtn = document.getElementById('notifEnableBtn');
+  const permBanner = document.getElementById('notifPermissionBanner');
   const unreadTxt = document.getElementById('notifUnreadBadge');
   if(!bellBtn || !dropdown) return;
+
+  // Initialize service worker
+  initServiceWorker();
+
+  // Check permission state for banner
+  function checkPermissionUI(){
+    if('Notification' in window){
+      if(Notification.permission === 'default' && permBanner){
+        permBanner.style.display = 'flex';
+      } else if(permBanner) {
+        permBanner.style.display = 'none';
+      }
+    }
+  }
+  checkPermissionUI();
+
+  if(notifEnableBtn){
+    notifEnableBtn.onclick = async (e) => {
+      e.stopPropagation();
+      await requestNotificationPermission();
+      checkPermissionUI();
+    };
+  }
+
+  // Seen notification IDs tracker to fire alerts only for genuine new notifications
+  let seenIds = new Set();
+  try{
+    const stored = localStorage.getItem('ci360_seen_notif_ids');
+    if(stored) seenIds = new Set(JSON.parse(stored));
+  }catch(e){}
+  let isFirstFetch = !localStorage.getItem('ci360_notifs_initialized');
 
   let allNotifs = [];
   let currentFilter = 'all';
@@ -179,6 +368,7 @@ export function initNotificationBell(){
     if(type.startsWith('job')) return '📋';
     if(type.startsWith('ticket')) return '🎫';
     if(type.startsWith('status')) return '🔄';
+    if(type.startsWith('test')) return '🧪';
     return '🔔';
   }
 
@@ -256,6 +446,30 @@ export function initNotificationBell(){
       badge.textContent = unread > 99 ? '99+' : unread;
       badge.style.display = unread > 0 ? 'flex' : 'none';
       if(unreadTxt) unreadTxt.textContent = unread > 0 ? `(${unread} new)` : '';
+
+      // Check for genuinely new incoming unread notifications to alert
+      if(!isFirstFetch){
+        allNotifs.forEach(n => {
+          if(!n.read && !seenIds.has(String(n._id))){
+            seenIds.add(String(n._id));
+            triggerSystemNotification({
+              title: n.title || 'CI360 Alert',
+              message: n.message || '',
+              type: n.type,
+              id: n._id
+            });
+          }
+        });
+      } else {
+        allNotifs.forEach(n => seenIds.add(String(n._id)));
+        isFirstFetch = false;
+        localStorage.setItem('ci360_notifs_initialized', '1');
+      }
+
+      try{
+        localStorage.setItem('ci360_seen_notif_ids', JSON.stringify(Array.from(seenIds).slice(-100)));
+      }catch(e){}
+
       renderList();
     }catch(e){
       if(list && allNotifs.length === 0) list.innerHTML = `<div style="padding:16px;color:var(--s-red-text);font-size:12px">Could not load notifications</div>`;
@@ -263,9 +477,48 @@ export function initNotificationBell(){
   }
 
   fetchNotifications();
-  // Live auto-polling every 25 seconds
-  const pollInterval = setInterval(fetchNotifications, 25000);
+  // Live responsive auto-polling every 15 seconds
+  const pollInterval = setInterval(fetchNotifications, 15000);
   window.addEventListener('beforeunload', () => clearInterval(pollInterval));
+
+  // Test Notification Button
+  if(testNotifBtn){
+    testNotifBtn.onclick = async (e) => {
+      e.stopPropagation();
+      if('Notification' in window && Notification.permission !== 'granted'){
+        const granted = await requestNotificationPermission();
+        if(!granted) return;
+      }
+      try{
+        testNotifBtn.disabled = true;
+        testNotifBtn.textContent = '…';
+        const res = await apiPost('/notifications/test', {});
+        const notif = res.notification || {
+          title: '🔔 CI360 Alert Test',
+          message: `Test alert delivered at ${new Date().toLocaleTimeString()}!`
+        };
+        await triggerSystemNotification({
+          title: notif.title,
+          message: notif.message,
+          type: 'test_alert',
+          id: notif._id || Date.now()
+        });
+        flashToast('✓ Test notification delivered to your device!');
+        await fetchNotifications();
+      }catch(err){
+        // Fallback test notification if backend endpoint is unavailable
+        await triggerSystemNotification({
+          title: '🔔 CI360 Alert Test',
+          message: `Local test notification delivered at ${new Date().toLocaleTimeString()}!`,
+          tag: 'ci360-test'
+        });
+        flashToast('✓ Local test notification delivered!');
+      }finally{
+        testNotifBtn.disabled = false;
+        testNotifBtn.textContent = '🧪 Test';
+      }
+    };
+  }
 
   // Filter chips
   dropdown.querySelectorAll('.notif-filter-btn').forEach(btn => {
@@ -288,6 +541,7 @@ export function initNotificationBell(){
       backdrop.classList.add('open');
     }
     bellBtn.setAttribute('aria-expanded', 'true');
+    checkPermissionUI();
     const userDropdown = document.getElementById('topbarUserDropdown');
     if(userDropdown) userDropdown.style.display = 'none';
     fetchNotifications();
@@ -1914,6 +2168,8 @@ Object.assign(window, {
   api, apiGet, apiPost, apiPut, apiPatch, apiDelete,
   fmtINR, fmtHours, escapeHtml, fmtDate, flashToast, openModal, logout,
   getTheme, setTheme,
+  initServiceWorker, playNotificationChime, triggerPhoneVibration,
+  requestNotificationPermission, triggerSystemNotification,
   fmtFileSize, getFileCategory, isImageAttachment, openFilePreviewModal,
   renderAttachmentChips, uploadFilesToServer, renderAttachmentUploader,
   bindAttachmentUploader, getUploaderAttachments, setUploaderAttachments,
