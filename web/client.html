@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>CI360 — Client Portal</title>
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('ci360_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e){}
+  })();
+</script>
 <link rel="icon" type="image/png" href="/logo.png">
 <link rel="stylesheet" href="/src/css/style.css">
 </head>

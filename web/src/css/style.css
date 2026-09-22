@@ -59,7 +59,8 @@
 
 /* ── LIGHT THEME (default) ─────────────────────────────────── */
 html,
-[data-theme="light"] {
+[data-theme="light"],
+html:not([data-theme="dark"]) {
   --bg-app: #F1F5F9;
   --bg-base: #F8FAFC;
   --bg-surface: #FFFFFF;
@@ -83,11 +84,11 @@ html,
   --accent-bg: var(--brand-50);
   --accent-ring: rgba(99, 102, 241, 0.2);
 
-  --sidebar-bg: #0F172A;
-  --sidebar-border: rgba(255, 255, 255, 0.07);
-  --sidebar-txt: #94A3B8;
-  --sidebar-txt-act: #FFFFFF;
-  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-bg: #FFFFFF;
+  --sidebar-border: #E2E8F0;
+  --sidebar-txt: #64748B;
+  --sidebar-txt-act: #0F172A;
+  --sidebar-hover: #F1F5F9;
   --sidebar-active: var(--brand-600);
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
@@ -266,9 +267,13 @@ textarea {
   inset: 0 auto 0 0;
   z-index: 100;
   border-right: 1px solid var(--sidebar-border);
-  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.2);
-  transition: transform var(--t-normal);
+  box-shadow: 2px 0 16px rgba(0, 0, 0, 0.05);
+  transition: transform var(--t-normal), background var(--t-normal), border-color var(--t-normal);
   overflow: hidden;
+}
+
+[data-theme="dark"] .app-sidebar {
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.35);
 }
 
 .sidebar-brand {
@@ -291,7 +296,7 @@ textarea {
 .brand-info h1 {
   font-size: 16px;
   font-weight: 800;
-  color: #FFFFFF;
+  color: var(--text-1);
   letter-spacing: -0.02em;
   line-height: 1.2;
 }
@@ -378,11 +383,16 @@ textarea {
 .sidebar-user {
   padding: 14px 16px;
   border-top: 1px solid var(--sidebar-border);
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--bg-elevated);
   display: flex;
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+  transition: background var(--t-normal), border-color var(--t-normal);
+}
+
+[data-theme="dark"] .sidebar-user {
+  background: rgba(0, 0, 0, 0.25);
 }
 
 .user-avatar {
@@ -405,7 +415,7 @@ textarea {
 }
 
 .user-details .name {
-  color: #FFFFFF;
+  color: var(--text-1);
   font-weight: 700;
   font-size: 12.5px;
   white-space: nowrap;
@@ -2485,6 +2495,55 @@ td select:focus {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   UTILITY — light mode text & surface protection
+   ═══════════════════════════════════════════════════════════ */
+[data-theme="light"] .card,
+[data-theme="light"] .block,
+[data-theme="light"] .app-content,
+[data-theme="light"] .table-wrap,
+[data-theme="light"] table,
+html:not([data-theme="dark"]) .card,
+html:not([data-theme="dark"]) .block,
+html:not([data-theme="dark"]) .app-content {
+  color: var(--text-1);
+}
+
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] h5,
+[data-theme="light"] h6,
+html:not([data-theme="dark"]) h1,
+html:not([data-theme="dark"]) h2,
+html:not([data-theme="dark"]) h3,
+html:not([data-theme="dark"]) h4 {
+  color: var(--text-1);
+}
+
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea,
+html:not([data-theme="dark"]) input,
+html:not([data-theme="dark"]) select,
+html:not([data-theme="dark"]) textarea {
+  color-scheme: light;
+  color: var(--text-1);
+  background-color: var(--bg-input);
+}
+
+/* Ensure stray white text in light mode is dark unless on a solid badge/button/avatar */
+[data-theme="light"] :not(.btn):not(.badge):not(.user-avatar):not(.tud-avatar):not(.topbar-user-avatar):not(.notif-badge):not(.tmi-badge):not(.brand-pill):not(.sidebar-item.active):not(.pchip.active):not(.notif-filter-btn.active):not(.task-checkbox-custom.checked):not(.daily-circle-check.checked)[style*="color:#fff"],
+[data-theme="light"] :not(.btn):not(.badge):not(.user-avatar):not(.tud-avatar):not(.topbar-user-avatar):not(.notif-badge):not(.tmi-badge):not(.brand-pill):not(.sidebar-item.active):not(.pchip.active):not(.notif-filter-btn.active):not(.task-checkbox-custom.checked):not(.daily-circle-check.checked)[style*="color: #fff"],
+[data-theme="light"] :not(.btn):not(.badge):not(.user-avatar):not(.tud-avatar):not(.topbar-user-avatar):not(.notif-badge):not(.tmi-badge):not(.brand-pill):not(.sidebar-item.active):not(.pchip.active):not(.notif-filter-btn.active):not(.task-checkbox-custom.checked):not(.daily-circle-check.checked)[style*="color:#FFF"],
+[data-theme="light"] :not(.btn):not(.badge):not(.user-avatar):not(.tud-avatar):not(.topbar-user-avatar):not(.notif-badge):not(.tmi-badge):not(.brand-pill):not(.sidebar-item.active):not(.pchip.active):not(.notif-filter-btn.active):not(.task-checkbox-custom.checked):not(.daily-circle-check.checked)[style*="color:#ffffff"],
+[data-theme="light"] :not(.btn):not(.badge):not(.user-avatar):not(.tud-avatar):not(.topbar-user-avatar):not(.notif-badge):not(.tmi-badge):not(.brand-pill):not(.sidebar-item.active):not(.pchip.active):not(.notif-filter-btn.active):not(.task-checkbox-custom.checked):not(.daily-circle-check.checked)[style*="color: #ffffff"],
+[data-theme="light"] :not(.btn):not(.badge):not(.user-avatar):not(.tud-avatar):not(.topbar-user-avatar):not(.notif-badge):not(.tmi-badge):not(.brand-pill):not(.sidebar-item.active):not(.pchip.active):not(.notif-filter-btn.active):not(.task-checkbox-custom.checked):not(.daily-circle-check.checked)[style*="color:white"],
+[data-theme="light"] :not(.btn):not(.badge):not(.user-avatar):not(.tud-avatar):not(.topbar-user-avatar):not(.notif-badge):not(.tmi-badge):not(.brand-pill):not(.sidebar-item.active):not(.pchip.active):not(.notif-filter-btn.active):not(.task-checkbox-custom.checked):not(.daily-circle-check.checked)[style*="color: white"] {
+  color: var(--text-1) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
@@ -2558,7 +2617,8 @@ td select:focus {
 /* ── MOBILE MOCKUP STYLING (<=768px ONLY) ─────────────────────── */
 @media (max-width: 768px) {
   .app-shell {
-    background: #070b14 !important;
+    background: var(--bg-app) !important;
+    color: var(--text-1) !important;
   }
 
   .app-sidebar {
@@ -2570,7 +2630,8 @@ td select:focus {
   }
 
   .app-main {
-    background: #070b14 !important;
+    background: var(--bg-app) !important;
+    color: var(--text-1) !important;
     padding-bottom: 84px !important;
   }
 
@@ -2581,8 +2642,9 @@ td select:focus {
   .app-topbar {
     padding: 0 14px !important;
     height: 54px !important;
-    background: #070b14 !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+    background: var(--bg-surface) !important;
+    border-bottom: 1px solid var(--border-sm) !important;
+    box-shadow: var(--shadow-xs) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
@@ -2659,7 +2721,7 @@ td select:focus {
     height: 32px !important;
     object-fit: contain !important;
     flex-shrink: 0 !important;
-    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.55)) !important;
+    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.4)) !important;
   }
 
   .mobile-brand-info {
@@ -2674,7 +2736,7 @@ td select:focus {
     font-size: 16px !important;
     font-weight: 800 !important;
     letter-spacing: -0.02em !important;
-    color: #ffffff !important;
+    color: var(--text-1) !important;
     line-height: 1.1 !important;
   }
 
@@ -2683,7 +2745,7 @@ td select:focus {
     font-weight: 700 !important;
     letter-spacing: 1.2px !important;
     text-transform: uppercase !important;
-    color: var(--gold-400) !important;
+    color: var(--gold-500) !important;
     line-height: 1 !important;
     margin-top: 1px !important;
   }
@@ -2702,15 +2764,15 @@ td select:focus {
     width: 36px !important;
     height: 36px !important;
     border-radius: 10px !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: #94a3b8 !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-sm) !important;
+    color: var(--text-2) !important;
     cursor: pointer !important;
     transition: all 0.2s ease !important;
   }
 
   .mobile-topbar-btn:active {
-    background: rgba(255, 255, 255, 0.12) !important;
+    background: var(--bg-hover) !important;
     transform: scale(0.95) !important;
   }
 
@@ -2719,9 +2781,9 @@ td select:focus {
     width: 36px !important;
     height: 36px !important;
     border-radius: 10px !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: #94a3b8 !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-sm) !important;
+    color: var(--text-2) !important;
     position: relative !important;
   }
 
@@ -2772,8 +2834,8 @@ td select:focus {
     display: inline-block;
     width: 6px;
     height: 6px;
-    border-right: 2px solid #94a3b8;
-    border-bottom: 2px solid #94a3b8;
+    border-right: 2px solid var(--text-3);
+    border-bottom: 2px solid var(--text-3);
     transform: rotate(45deg);
     margin-left: 3px;
     margin-bottom: 3px;
@@ -2788,11 +2850,11 @@ td select:focus {
     position: fixed !important;
     top: 58px !important;
     right: 12px !important;
-    width: 216px !important;
-    background: #0f1422 !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    width: 226px !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-sm) !important;
     border-radius: 14px !important;
-    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75) !important;
+    box-shadow: var(--shadow-xl) !important;
     padding: 6px !important;
     z-index: 1000 !important;
   }
@@ -2806,10 +2868,10 @@ td select:focus {
     width: auto !important;
     max-width: calc(100vw - 20px) !important;
     margin: 0 auto !important;
-    background: #0f1422 !important;
-    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-sm) !important;
     border-radius: 16px !important;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85) !important;
+    box-shadow: var(--shadow-xl) !important;
     z-index: 1050 !important;
     max-height: calc(100vh - 136px) !important;
     flex-direction: column !important;
@@ -2834,7 +2896,7 @@ td select:focus {
     display: none;
     position: fixed !important;
     inset: 0 !important;
-    background: rgba(0, 0, 0, 0.5) !important;
+    background: rgba(0, 0, 0, 0.45) !important;
     backdrop-filter: blur(2px) !important;
     -webkit-backdrop-filter: blur(2px) !important;
     z-index: 1040 !important;
@@ -2846,8 +2908,8 @@ td select:focus {
 
   .notif-dropdown-header {
     padding: 12px 14px !important;
-    background: #141a29 !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: var(--bg-elevated) !important;
+    border-bottom: 1px solid var(--border-sm) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
@@ -2856,7 +2918,7 @@ td select:focus {
 
   .notif-dropdown-header strong {
     font-size: 13.5px !important;
-    color: #ffffff !important;
+    color: var(--text-1) !important;
     display: flex !important;
     align-items: center !important;
     gap: 6px !important;
@@ -2869,9 +2931,9 @@ td select:focus {
     width: 26px !important;
     height: 26px !important;
     border-radius: 50% !important;
-    background: rgba(255, 255, 255, 0.08) !important;
-    border: 1px solid rgba(255, 255, 255, 0.12) !important;
-    color: #94a3b8 !important;
+    background: var(--bg-surface) !important;
+    border: 1px solid var(--border-sm) !important;
+    color: var(--text-3) !important;
     font-size: 12px !important;
     cursor: pointer !important;
     padding: 0 !important;
@@ -2881,16 +2943,16 @@ td select:focus {
   }
 
   .notif-mobile-close:active {
-    background: rgba(255, 255, 255, 0.2) !important;
-    color: #ffffff !important;
+    background: var(--bg-hover) !important;
+    color: var(--text-1) !important;
   }
 
   .notif-filters {
     display: flex !important;
     gap: 6px !important;
     padding: 8px 12px !important;
-    background: #0f1422 !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+    background: var(--bg-surface) !important;
+    border-bottom: 1px solid var(--border-sm) !important;
     overflow-x: auto !important;
     white-space: nowrap !important;
     scrollbar-width: none !important;
@@ -2905,9 +2967,9 @@ td select:focus {
   .notif-filter-btn {
     padding: 4px 10px !important;
     border-radius: 20px !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    color: #94a3b8 !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-sm) !important;
+    color: var(--text-3) !important;
     font-size: 11px !important;
     font-weight: 600 !important;
     flex-shrink: 0 !important;
@@ -2934,7 +2996,7 @@ td select:focus {
     display: flex !important;
     gap: 10px !important;
     align-items: flex-start !important;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-bottom: 1px solid var(--border-xs) !important;
   }
 
   .notif-item .notif-icon {
@@ -2945,26 +3007,27 @@ td select:focus {
     align-items: center !important;
     justify-content: center !important;
     border-radius: 8px !important;
-    background: rgba(255, 255, 255, 0.06) !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-sm) !important;
     flex-shrink: 0 !important;
   }
 
   .notif-item span[style*="font-weight:700"] {
     font-size: 12.5px !important;
-    color: #ffffff !important;
+    color: var(--text-1) !important;
     line-height: 1.3 !important;
     word-break: break-word !important;
   }
 
   .notif-item span[style*="white-space:nowrap"] {
     font-size: 10px !important;
-    color: #64748b !important;
+    color: var(--text-4) !important;
     flex-shrink: 0 !important;
   }
 
   .notif-item div[style*="color:var(--text-3)"] {
     font-size: 11.5px !important;
-    color: #94a3b8 !important;
+    color: var(--text-3) !important;
     line-height: 1.4 !important;
     word-break: break-word !important;
   }
@@ -2984,7 +3047,7 @@ td select:focus {
     border-radius: 10px;
     background: transparent;
     border: none;
-    color: #e2e8f0;
+    color: var(--text-2);
     font-size: 13px;
     font-weight: 500;
     cursor: pointer;
@@ -2993,7 +3056,8 @@ td select:focus {
   }
 
   .tud-mobile-item:active {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--bg-hover);
+    color: var(--text-1);
   }
 
   .tmi-left {
@@ -3021,7 +3085,7 @@ td select:focus {
   }
 
   .tmi-chevron {
-    color: #64748b;
+    color: var(--text-4);
   }
 
   .tud-mobile-item.danger {
@@ -3052,9 +3116,9 @@ td select:focus {
   .pchip {
     padding: 7px 16px !important;
     border-radius: 9999px !important;
-    background: #141926 !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
-    color: #94a3b8 !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-sm) !important;
+    color: var(--text-2) !important;
     font-size: 12px !important;
     font-weight: 600 !important;
     white-space: nowrap !important;
@@ -3096,7 +3160,8 @@ td select:focus {
   }
 
   .card.kpi {
-    background: linear-gradient(180deg, #101625 0%, #0d121f 100%) !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-sm) !important;
     border-radius: 16px !important;
     padding: 12px !important;
     position: relative !important;
@@ -3106,6 +3171,12 @@ td select:focus {
     flex-direction: column !important;
     justify-content: space-between !important;
     box-sizing: border-box !important;
+    box-shadow: var(--shadow-xs) !important;
+  }
+
+  [data-theme="dark"] .card.kpi {
+    background: linear-gradient(180deg, #101625 0%, #0d121f 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
   }
 
   .kpi-work-val {
@@ -3170,7 +3241,7 @@ td select:focus {
     font-size: 9.5px !important;
     font-weight: 800 !important;
     letter-spacing: 0.4px !important;
-    color: #94a3b8 !important;
+    color: var(--text-3) !important;
     text-transform: uppercase !important;
     line-height: 1.25 !important;
     display: flex !important;
@@ -3181,7 +3252,7 @@ td select:focus {
   .card.kpi .value {
     font-size: clamp(20px, 5.5vw, 25px) !important;
     font-weight: 800 !important;
-    color: #ffffff !important;
+    color: var(--text-1) !important;
     letter-spacing: -0.5px !important;
     margin: 2px 0 1px 0 !important;
     white-space: nowrap !important;
@@ -3191,7 +3262,7 @@ td select:focus {
 
   .card.kpi .sub {
     font-size: 11px !important;
-    color: #64748b !important;
+    color: var(--text-4) !important;
     line-height: 1.3 !important;
     margin: 0 !important;
   }
@@ -3224,17 +3295,23 @@ td select:focus {
 
   /* Roadmap Signals & Section Blocks */
   .block {
-    background: #101625 !important;
-    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-sm) !important;
     border-radius: 16px !important;
     padding: 14px !important;
     margin-bottom: 12px !important;
+    box-shadow: var(--shadow-xs) !important;
+  }
+
+  [data-theme="dark"] .block {
+    background: #101625 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
   }
 
   .block h2 {
     font-size: 14px !important;
     font-weight: 700 !important;
-    color: #ffffff !important;
+    color: var(--text-1) !important;
     margin: 0 0 12px 0 !important;
     display: flex !important;
     align-items: center !important;
@@ -3243,12 +3320,12 @@ td select:focus {
 
   .block h2 .eyebrow {
     font-size: 11px !important;
-    color: #64748b !important;
+    color: var(--text-3) !important;
     font-weight: 500 !important;
-    background: rgba(255, 255, 255, 0.04) !important;
+    background: var(--bg-elevated) !important;
     padding: 2px 8px !important;
     border-radius: 6px !important;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid var(--border-sm) !important;
   }
 
   /* Side-by-side Work Value Cards on Mobile - single column for ample chart readability */
@@ -3275,13 +3352,14 @@ td select:focus {
     overflow: hidden !important;
     text-overflow: ellipsis !important;
     white-space: nowrap !important;
-    color: #cbd5e1 !important;
+    color: var(--text-2) !important;
   }
 
   .bar-track {
     height: 6px !important;
     border-radius: 4px !important;
-    background: rgba(255, 255, 255, 0.08) !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-xs) !important;
     overflow: hidden !important;
   }
 
@@ -3293,7 +3371,7 @@ td select:focus {
   .bar-row .num {
     font-size: 11px !important;
     font-weight: 700 !important;
-    color: #ffffff !important;
+    color: var(--text-1) !important;
     text-align: right !important;
   }
 
@@ -3315,8 +3393,8 @@ td select:focus {
     display: flex !important;
     flex-wrap: wrap !important;
     gap: 8px !important;
-    background: rgba(255, 255, 255, 0.03) !important;
-    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    background: var(--bg-elevated) !important;
+    border: 1px solid var(--border-sm) !important;
     border-radius: 10px !important;
     padding: 10px !important;
     margin-bottom: 8px !important;
@@ -3452,15 +3530,23 @@ td select:focus {
     left: 0 !important;
     right: 0 !important;
     height: 66px !important;
-    background: rgba(9, 13, 22, 0.96) !important;
+    background: rgba(255, 255, 255, 0.94) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-top: 1px solid var(--border-sm) !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.06) !important;
     z-index: 990 !important;
     align-items: center !important;
     justify-content: space-around !important;
     padding: 0 4px calc(env(safe-area-inset-bottom, 6px)) 4px !important;
     box-sizing: border-box !important;
+    transition: background 0.25s ease, border-color 0.25s ease;
+  }
+
+  [data-theme="dark"] .mobile-bottom-nav {
+    background: rgba(9, 13, 22, 0.96) !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6) !important;
   }
 
   .mbn-item {
@@ -3471,7 +3557,7 @@ td select:focus {
     gap: 3px !important;
     background: transparent !important;
     border: none !important;
-    color: #64748b !important;
+    color: var(--text-3) !important;
     font-size: 10.5px !important;
     font-weight: 500 !important;
     cursor: pointer !important;
@@ -3514,7 +3600,7 @@ td select:focus {
     display: block !important;
     position: fixed !important;
     inset: 0 !important;
-    background: rgba(0, 0, 0, 0.65) !important;
+    background: rgba(0, 0, 0, 0.5) !important;
     backdrop-filter: blur(4px) !important;
     -webkit-backdrop-filter: blur(4px) !important;
     z-index: 998 !important;
@@ -3533,8 +3619,8 @@ td select:focus {
     bottom: 0 !important;
     left: 0 !important;
     right: 0 !important;
-    background: #0f1422 !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: var(--bg-surface) !important;
+    border-top: 1px solid var(--border-sm) !important;
     border-radius: 20px 20px 0 0 !important;
     padding: 12px 18px calc(24px + env(safe-area-inset-bottom, 10px)) 18px !important;
     z-index: 999 !important;
@@ -3542,7 +3628,7 @@ td select:focus {
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
     max-height: 80vh !important;
     overflow-y: auto !important;
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.8) !important;
+    box-shadow: var(--shadow-xl) !important;
   }
 
   .mobile-more-sheet.active {
@@ -3559,7 +3645,7 @@ td select:focus {
     width: 36px;
     height: 4px;
     border-radius: 2px;
-    background: rgba(255, 255, 255, 0.2);
+    background: var(--border-md);
   }
 
   .mms-header {
@@ -3568,7 +3654,7 @@ td select:focus {
     justify-content: space-between;
     margin-bottom: 16px;
     padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--border-sm);
   }
 
   .mms-brand {
@@ -3582,7 +3668,7 @@ td select:focus {
     height: 28px !important;
     object-fit: contain !important;
     flex-shrink: 0;
-    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.4));
   }
 
   .mms-brand-info {
@@ -3594,21 +3680,21 @@ td select:focus {
   .mms-title {
     font-size: 15px;
     font-weight: 800;
-    color: #ffffff;
+    color: var(--text-1);
     line-height: 1.1;
   }
 
   .mms-subtitle {
     font-size: 10.5px;
-    color: #94a3b8;
+    color: var(--text-3);
     font-weight: 500;
     margin-top: 1px;
   }
 
   .mms-close-btn {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #94a3b8;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-sm);
+    color: var(--text-3);
     width: 28px;
     height: 28px;
     border-radius: 50%;
@@ -3633,23 +3719,24 @@ td select:focus {
     justify-content: center;
     gap: 6px;
     padding: 14px 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-sm);
     border-radius: 12px;
-    color: #cbd5e1;
+    color: var(--text-2);
     cursor: pointer;
     transition: all 0.15s ease;
   }
 
   .mms-card:active {
-    background: rgba(79, 70, 229, 0.15);
-    border-color: #4f46e5;
+    background: var(--accent-bg);
+    border-color: var(--brand-500);
+    color: var(--accent);
   }
 
   .mms-card.active {
-    background: rgba(79, 70, 229, 0.2);
-    border-color: #6366f1;
-    color: #ffffff;
+    background: var(--accent-bg);
+    border-color: var(--brand-500);
+    color: var(--brand-600);
     font-weight: 700;
   }
 

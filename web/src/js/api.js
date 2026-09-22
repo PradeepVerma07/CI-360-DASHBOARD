@@ -45,15 +45,60 @@ export function getTheme(){ return localStorage.getItem('ci360_theme') || 'light
 export function setTheme(t){
   localStorage.setItem('ci360_theme', t);
   document.documentElement.setAttribute('data-theme', t);
-  // update toggle buttons
+  // update desktop toggle buttons
   document.querySelectorAll('.theme-btn').forEach(b => {
     b.classList.toggle('active', b.dataset.theme === t);
   });
+  // Topbar dropdown desktop theme toggle
+  const tudThemeBtn = document.getElementById('tudThemeToggleBtn');
+  if(tudThemeBtn){
+    const icon = tudThemeBtn.querySelector('.tud-icon');
+    const label = tudThemeBtn.querySelector('.tud-label');
+    if(icon) icon.textContent = t === 'dark' ? '☀️' : '🌙';
+    if(label) label.textContent = `Switch to ${t === 'dark' ? 'Light' : 'Dark'} Mode`;
+  }
+  // Mobile popover toggle button
+  const tudMobileThemeIcon = document.getElementById('tudMobileThemeIcon');
+  const tudMobileThemeText = document.getElementById('tudMobileThemeText');
+  if(tudMobileThemeIcon) tudMobileThemeIcon.textContent = t === 'dark' ? '☀️' : '🌙';
+  if(tudMobileThemeText) tudMobileThemeText.textContent = t === 'dark' ? 'Light Mode' : 'Dark Mode';
+
+  // Mobile more sheet toggle button
+  const mmsThemeBtn = document.getElementById('mmsToggleThemeBtn');
+  if(mmsThemeBtn){
+    const span = mmsThemeBtn.querySelector('span');
+    if(span) span.textContent = t === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+  }
 }
 export function initTheme(){
   const saved = getTheme();
   document.documentElement.setAttribute('data-theme', saved);
+  // sync any buttons that exist in DOM
+  document.querySelectorAll('.theme-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.theme === saved);
+  });
+  const tudThemeBtn = document.getElementById('tudThemeToggleBtn');
+  if(tudThemeBtn){
+    const icon = tudThemeBtn.querySelector('.tud-icon');
+    const label = tudThemeBtn.querySelector('.tud-label');
+    if(icon) icon.textContent = saved === 'dark' ? '☀️' : '🌙';
+    if(label) label.textContent = `Switch to ${saved === 'dark' ? 'Light' : 'Dark'} Mode`;
+  }
+  const tudMobileThemeIcon = document.getElementById('tudMobileThemeIcon');
+  const tudMobileThemeText = document.getElementById('tudMobileThemeText');
+  if(tudMobileThemeIcon) tudMobileThemeIcon.textContent = saved === 'dark' ? '☀️' : '🌙';
+  if(tudMobileThemeText) tudMobileThemeText.textContent = saved === 'dark' ? 'Light Mode' : 'Dark Mode';
+
+  const mmsThemeBtn = document.getElementById('mmsToggleThemeBtn');
+  if(mmsThemeBtn){
+    const span = mmsThemeBtn.querySelector('span');
+    if(span) span.textContent = saved === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+  }
 }
+// Run theme initialization immediately on module load
+try {
+  initTheme();
+} catch(e){}
 
 /* ── TOAST ───────────────────────────────────────────────────── */
 export function flashToast(msg, isError){
@@ -594,6 +639,16 @@ export function renderAppShell({ user, currentRole, activeTab, tabs, title, subt
                 <!-- Mobile Dropdown Popover matching User Mockup -->
                 <div class="tud-mobile-only">
                   <div class="tud-mobile-list">
+                    <button type="button" class="tud-mobile-item" id="tudMobileThemeBtn" role="menuitem">
+                      <div class="tmi-left">
+                        <span style="font-size:16px" id="tudMobileThemeIcon">${getTheme()==='dark' ? '☀️' : '🌙'}</span>
+                        <span id="tudMobileThemeText">${getTheme()==='dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                      </div>
+                      <div class="tmi-right">
+                        <svg class="tmi-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+                      </div>
+                    </button>
+
                     <button type="button" class="tud-mobile-item" id="tudMobileNotifsBtn" role="menuitem">
                       <div class="tmi-left">
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
@@ -772,10 +827,7 @@ export function bindAppShellEvents(onTabChange){
   const mmsThemeBtn = document.getElementById('mmsToggleThemeBtn');
   if(mmsThemeBtn){
     mmsThemeBtn.onclick = () => {
-      const nextTheme = getTheme() === 'dark' ? 'light' : 'dark';
-      setTheme(nextTheme);
-      const span = mmsThemeBtn.querySelector('span');
-      if(span) span.textContent = nextTheme === 'dark' ? '☀️ Light Mode' : '🌙 Dark Mode';
+      setTheme(getTheme() === 'dark' ? 'light' : 'dark');
     };
   }
   const mmsNotifsBtn = document.getElementById('mmsNotifsBtn');
@@ -803,6 +855,14 @@ export function bindAppShellEvents(onTabChange){
   }
 
   // Mobile User Popover Actions
+  const tudMobileThemeBtn = document.getElementById('tudMobileThemeBtn');
+  if(tudMobileThemeBtn){
+    tudMobileThemeBtn.onclick = (e) => {
+      e.stopPropagation();
+      setTheme(getTheme() === 'dark' ? 'light' : 'dark');
+    };
+  }
+
   const tudMobileNotifsBtn = document.getElementById('tudMobileNotifsBtn');
   if(tudMobileNotifsBtn){
     tudMobileNotifsBtn.onclick = (e) => {
@@ -882,12 +942,7 @@ export function bindAppShellEvents(onTabChange){
   const tudThemeBtn = document.getElementById('tudThemeToggleBtn');
   if(tudThemeBtn){
     tudThemeBtn.onclick = () => {
-      const nextTheme = getTheme() === 'dark' ? 'light' : 'dark';
-      setTheme(nextTheme);
-      const icon = tudThemeBtn.querySelector('.tud-icon');
-      const label = tudThemeBtn.querySelector('.tud-label');
-      if(icon) icon.textContent = nextTheme === 'dark' ? '☀️' : '🌙';
-      if(label) label.textContent = `Switch to ${nextTheme === 'dark' ? 'Light' : 'Dark'} Mode`;
+      setTheme(getTheme() === 'dark' ? 'light' : 'dark');
     };
   }
 

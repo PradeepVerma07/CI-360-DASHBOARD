@@ -4,10 +4,18 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>CI360 — Client Portal</title>
+<script>
+  (function(){
+    try {
+      var t = localStorage.getItem('ci360_theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch(e){}
+  })();
+</script>
 <link rel="icon" type="image/png" href="/logo.png">
-  <script type="module" crossorigin src="/assets/client-L2lc-mPD.js"></script>
-  <link rel="modulepreload" crossorigin href="/assets/api-BFw2c23V.js">
-  <link rel="stylesheet" crossorigin href="/assets/api-BVtA0Xow.css">
+  <script type="module" crossorigin src="/assets/client-mlsgp2ZR.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/api-DG7sQMXn.js">
+  <link rel="stylesheet" crossorigin href="/assets/api-BEMxtfhw.css">
 </head>
 <body>
 <div id="app"><div class="loading">Loading…</div></div>
