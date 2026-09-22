@@ -1091,13 +1091,17 @@ textarea {
   border-radius: 12px;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.08));
   border: 1px solid rgba(99, 102, 241, 0.3);
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: space-between !important;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
   flex-shrink: 0;
+}
+
+.notif-perm-banner.hidden {
+  display: none !important;
 }
 
 .npb-content {
@@ -1138,6 +1142,33 @@ textarea {
   flex-shrink: 0;
   border-radius: 8px !important;
   white-space: nowrap !important;
+}
+
+.npb-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-shrink: 0 !important;
+}
+
+.npb-close {
+  background: transparent !important;
+  border: none !important;
+  color: var(--text-3) !important;
+  font-size: 13px !important;
+  padding: 4px 6px !important;
+  cursor: pointer !important;
+  border-radius: 6px !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all var(--t-fast) !important;
+}
+
+.npb-close:hover {
+  background: var(--bg-hover) !important;
+  color: var(--text-1) !important;
 }
 
 .notif-mobile-close {

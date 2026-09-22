@@ -188,6 +188,27 @@ export function triggerPhoneVibration(){
   }catch(e){}
 }
 
+export function isNotificationEnabled(){
+  try{
+    if(typeof Notification !== 'undefined' && Notification.permission === 'granted'){
+      return true;
+    }
+    if(localStorage.getItem('ci360_notif_enabled') === 'true'){
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+export function isNotificationBannerDismissed(){
+  try{
+    if(isNotificationEnabled()) return true;
+    if(localStorage.getItem('ci360_notif_banner_dismissed') === 'true') return true;
+    if(typeof Notification !== 'undefined' && Notification.permission === 'denied') return true;
+  }catch(e){}
+  return false;
+}
+
 export async function requestNotificationPermission(){
   if(!('Notification' in window)){
     flashToast('Your browser does not support notifications.', true);
@@ -197,7 +218,12 @@ export async function requestNotificationPermission(){
     const perm = await Notification.requestPermission();
     const banner = document.getElementById('notifPermissionBanner');
     if(perm === 'granted'){
-      if(banner) banner.style.display = 'none';
+      localStorage.setItem('ci360_notif_enabled', 'true');
+      if(banner){
+        banner.classList.add('hidden');
+        banner.style.setProperty('display', 'none', 'important');
+        banner.remove();
+      }
       flashToast('Notifications enabled for this device!');
       await triggerSystemNotification({
         title: 'CI360 Notifications Active 🔔',
@@ -206,7 +232,10 @@ export async function requestNotificationPermission(){
       });
       return true;
     } else {
-      if(banner) banner.style.display = 'flex';
+      if(banner){
+        banner.classList.add('hidden');
+        banner.style.setProperty('display', 'none', 'important');
+      }
       flashToast('Notification permission was declined.', true);
       return false;
     }
@@ -267,6 +296,8 @@ export async function triggerSystemNotification({ title, message, type, id, url 
 
 /* ── NOTIFICATION BELL ───────────────────────────────────────── */
 export function renderNotificationBell(){
+  const shouldShowBanner = !isNotificationBannerDismissed() && (typeof Notification === 'undefined' || Notification.permission === 'default');
+
   return `
     <div class="notif-wrapper">
       <button id="notifBellBtn" type="button" class="notif-bell-btn" title="Notifications" aria-label="Notifications">
@@ -289,7 +320,8 @@ export function renderNotificationBell(){
           </div>
         </div>
 
-        <div id="notifPermissionBanner" class="notif-perm-banner" style="display:none">
+        ${shouldShowBanner ? `
+        <div id="notifPermissionBanner" class="notif-perm-banner">
           <div class="npb-content">
             <span class="npb-icon">🔔</span>
             <div class="npb-text">
@@ -297,8 +329,11 @@ export function renderNotificationBell(){
               <span>Get notified on this device when jobs or tasks are updated.</span>
             </div>
           </div>
-          <button type="button" class="btn primary small npb-btn" id="notifEnableBtn">Enable</button>
-        </div>
+          <div class="npb-actions">
+            <button type="button" class="btn primary small npb-btn" id="notifEnableBtn">Enable</button>
+            <button type="button" class="npb-close" id="notifDismissBannerBtn" aria-label="Dismiss">✕</button>
+          </div>
+        </div>` : ''}
 
         <div class="notif-filters">
           <button type="button" class="notif-filter-btn active" data-filter="all">All</button>
@@ -323,6 +358,7 @@ export function initNotificationBell(){
   const markReadBtn = document.getElementById('markAllReadBtn');
   const testNotifBtn = document.getElementById('testNotifBtn');
   const notifEnableBtn = document.getElementById('notifEnableBtn');
+  const notifDismissBannerBtn = document.getElementById('notifDismissBannerBtn');
   const permBanner = document.getElementById('notifPermissionBanner');
   const unreadTxt = document.getElementById('notifUnreadBadge');
   if(!bellBtn || !dropdown) return;
@@ -330,23 +366,46 @@ export function initNotificationBell(){
   // Initialize service worker
   initServiceWorker();
 
+  function hidePermBanner(){
+    const b = document.getElementById('notifPermissionBanner');
+    if(b){
+      b.classList.add('hidden');
+      b.style.setProperty('display', 'none', 'important');
+      b.remove();
+    }
+  }
+
   // Check permission state for banner
   function checkPermissionUI(){
+    if(isNotificationBannerDismissed()){
+      hidePermBanner();
+      return;
+    }
     if('Notification' in window){
-      if(Notification.permission === 'default' && permBanner){
-        permBanner.style.display = 'flex';
-      } else if(permBanner) {
-        permBanner.style.display = 'none';
+      if(Notification.permission === 'granted' || Notification.permission === 'denied'){
+        hidePermBanner();
+      } else if(Notification.permission === 'default' && permBanner){
+        permBanner.style.setProperty('display', 'flex', 'important');
       }
     }
   }
   checkPermissionUI();
 
+  if(notifDismissBannerBtn){
+    notifDismissBannerBtn.onclick = (e) => {
+      e.stopPropagation();
+      localStorage.setItem('ci360_notif_banner_dismissed', 'true');
+      hidePermBanner();
+    };
+  }
+
   if(notifEnableBtn){
     notifEnableBtn.onclick = async (e) => {
       e.stopPropagation();
+      localStorage.setItem('ci360_notif_enabled', 'true');
+      hidePermBanner();
       await requestNotificationPermission();
-      checkPermissionUI();
+      hidePermBanner();
     };
   }
 
