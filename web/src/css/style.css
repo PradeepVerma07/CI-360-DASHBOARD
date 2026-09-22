@@ -2637,29 +2637,47 @@ td select:focus {
     display: none !important;
   }
 
-  /* Mobile Brand Header (Cyan Circle Badge + CI360) */
+  /* Mobile Brand Header (Same Desktop Logo + CI360) */
   .mobile-brand-title {
     display: flex !important;
     align-items: center !important;
-    gap: 10px !important;
+    gap: 9px !important;
+    min-width: 0 !important;
+    text-decoration: none !important;
   }
 
-  .mobile-brand-icon {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    filter: drop-shadow(0 0 10px rgba(6, 182, 212, 0.45));
+  .mobile-brand-logo-img {
+    width: 32px !important;
+    height: 32px !important;
+    object-fit: contain !important;
+    flex-shrink: 0 !important;
+    filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.55)) !important;
+  }
+
+  .mobile-brand-info {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    line-height: 1.15 !important;
+    min-width: 0 !important;
   }
 
   .mobile-brand-text {
-    font-size: 19px !important;
+    font-size: 16px !important;
     font-weight: 800 !important;
-    letter-spacing: -0.3px !important;
+    letter-spacing: -0.02em !important;
     color: #ffffff !important;
+    line-height: 1.1 !important;
+  }
+
+  .mobile-brand-tag {
+    font-size: 8.5px !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.2px !important;
+    text-transform: uppercase !important;
+    color: var(--gold-400) !important;
     line-height: 1 !important;
+    margin-top: 1px !important;
   }
 
   .topbar-right {
@@ -2981,11 +2999,14 @@ td select:focus {
   }
 
   .card.kpi .value {
-    font-size: 26px !important;
+    font-size: clamp(20px, 5.5vw, 25px) !important;
     font-weight: 800 !important;
     color: #ffffff !important;
     letter-spacing: -0.5px !important;
     margin: 2px 0 1px 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   .card.kpi .sub {
@@ -3050,10 +3071,10 @@ td select:focus {
     border: 1px solid rgba(255, 255, 255, 0.06) !important;
   }
 
-  /* Side-by-side Work Value Cards on Mobile */
+  /* Side-by-side Work Value Cards on Mobile - single column for ample chart readability */
   .grid-2 {
     display: grid !important;
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: 1fr !important;
     gap: 12px !important;
   }
 
@@ -3100,12 +3121,147 @@ td select:focus {
     grid-template-columns: 1fr;
   }
 
+  /* Responsive Team Member Allocation on Mobile */
+  .people-assigned-box {
+    padding: 12px !important;
+    border-radius: var(--r-md) !important;
+  }
+
   .people-assigned-headers {
-    grid-template-columns: 1fr 60px 60px 28px;
+    display: none !important;
   }
 
   .person-assign-row {
-    grid-template-columns: 1fr 60px 60px 28px;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    background: rgba(255, 255, 255, 0.03) !important;
+    border: 1px solid rgba(255, 255, 255, 0.07) !important;
+    border-radius: 10px !important;
+    padding: 10px !important;
+    margin-bottom: 8px !important;
+    align-items: center !important;
+  }
+
+  .person-assign-row .field:first-child {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+  }
+
+  .person-assign-row .field:first-child select {
+    width: 100% !important;
+  }
+
+  .person-assign-row .field:nth-child(2),
+  .person-assign-row .field:nth-child(3) {
+    flex: 1 1 70px !important;
+    min-width: 60px !important;
+  }
+
+  .person-assign-row .btn-remove-person {
+    margin-left: auto !important;
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 14px !important;
+  }
+
+  /* Mobile Data Tables & Horizontal Scrolling Containers */
+  .card:has(table),
+  .card-table,
+  .table-wrap,
+  div[style*="overflow-x:auto"] {
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: thin !important;
+    border-radius: var(--r-md) !important;
+    margin-bottom: 12px !important;
+  }
+
+  table {
+    min-width: 580px;
+    width: 100% !important;
+  }
+
+  th, td {
+    padding: 10px 12px !important;
+    font-size: 12px !important;
+  }
+
+  th {
+    font-size: 10px !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  /* Form Actions on Mobile */
+  .form-actions {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    gap: 10px !important;
+    width: 100% !important;
+    margin-top: 16px !important;
+  }
+
+  .form-actions button,
+  .form-actions .btn {
+    width: 100% !important;
+    padding: 11px 16px !important;
+    justify-content: center !important;
+    text-align: center !important;
+  }
+
+  /* Select with Button on Mobile */
+  .select-with-btn {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  .select-with-btn select {
+    flex: 1 1 180px !important;
+    min-width: 0 !important;
+  }
+
+  .select-with-btn button {
+    flex: 0 0 auto !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+
+  /* Modals on Mobile */
+  .modal-bg {
+    padding: 12px !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .modal {
+    width: 100% !important;
+    max-width: 100% !important;
+    max-height: 86vh !important;
+    padding: 18px 16px !important;
+    border-radius: 16px !important;
+    box-sizing: border-box !important;
+  }
+
+  .modal h3 {
+    font-size: 16px !important;
+    margin-bottom: 12px !important;
+  }
+
+  .modal .modal-actions {
+    display: flex !important;
+    flex-direction: column-reverse !important;
+    gap: 8px !important;
+    margin-top: 16px !important;
+  }
+
+  .modal .modal-actions button,
+  .modal .modal-actions .btn {
+    width: 100% !important;
+    padding: 10px 14px !important;
+    justify-content: center !important;
+    text-align: center !important;
   }
 
   /* Fixed Mobile Bottom Navigation Dock */
@@ -3235,10 +3391,38 @@ td select:focus {
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
+  .mms-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .mms-brand-logo-img {
+    width: 28px !important;
+    height: 28px !important;
+    object-fit: contain !important;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+  }
+
+  .mms-brand-info {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.15;
+  }
+
   .mms-title {
     font-size: 15px;
-    font-weight: 700;
+    font-weight: 800;
     color: #ffffff;
+    line-height: 1.1;
+  }
+
+  .mms-subtitle {
+    font-size: 10.5px;
+    color: #94a3b8;
+    font-weight: 500;
+    margin-top: 1px;
   }
 
   .mms-close-btn {

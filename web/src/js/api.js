@@ -420,15 +420,13 @@ export function renderAppShell({ user, currentRole, activeTab, tabs, title, subt
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
 
-            <!-- Mobile Brand Title (Mockup Left: Cyan Checkmark Badge + CI360) -->
+            <!-- Mobile Brand Title (Same Logo as Desktop) -->
             <div class="mobile-brand-title">
-              <div class="mobile-brand-icon">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="#06b6d4" stroke-width="2.5" />
-                  <path d="M8 12.5l2.8 2.8 5.2-5.6" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
+              <img src="/logo.png" alt="CI360 Logo" class="brand-logo-img mobile-brand-logo-img">
+              <div class="mobile-brand-info">
+                <span class="mobile-brand-text">CI360</span>
+                <span class="mobile-brand-tag">Intelligence</span>
               </div>
-              <span class="mobile-brand-text">CI360</span>
             </div>
 
             <div class="topbar-breadcrumb-wrap">
@@ -626,7 +624,13 @@ export function renderAppShell({ user, currentRole, activeTab, tabs, title, subt
           <div class="mobile-more-sheet" id="mobileMoreSheet" role="dialog" aria-modal="true" aria-label="All Navigation Items">
             <div class="mms-handle-wrap"><div class="mms-drag-handle"></div></div>
             <div class="mms-header">
-              <div class="mms-title">Navigation & Actions</div>
+              <div class="mms-brand">
+                <img src="/logo.png" alt="CI360 Logo" class="brand-logo-img mms-brand-logo-img">
+                <div class="mms-brand-info">
+                  <span class="mms-title">CI360</span>
+                  <span class="mms-subtitle">Suite Navigation</span>
+                </div>
+              </div>
               <button type="button" class="mms-close-btn" id="mmsCloseBtn" aria-label="Close menu">✕</button>
             </div>
             <div class="mms-grid">
