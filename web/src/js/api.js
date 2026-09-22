@@ -276,11 +276,15 @@ export function renderNotificationBell(){
       <div id="notifBackdrop" class="notif-backdrop" style="display:none"></div>
       <div id="notifDropdown" class="notif-dropdown" style="display:none">
         <div class="notif-dropdown-header">
-          <strong>🔔 Notifications <span id="notifUnreadBadge" style="font-size:11px;font-weight:700;color:var(--brand-500)"></span></strong>
-          <div style="display:flex;gap:6px;align-items:center">
-            <button id="testNotifBtn" type="button" class="btn ghost small" style="font-size:10.5px;padding:2px 7px;" title="Test notification delivery on this phone/browser">🧪 Test</button>
-            <button id="markAllReadBtn" type="button" class="btn ghost small" style="font-size:10.5px;padding:2px 7px;">Mark Read</button>
-            <button id="clearNotifBtn" type="button" class="btn ghost small" style="font-size:10.5px;padding:2px 7px;">Clear</button>
+          <div class="notif-header-title">
+            <span class="notif-header-bell">🔔</span>
+            <span class="notif-header-heading">Notifications</span>
+            <span id="notifUnreadBadge" class="notif-header-count" style="display:none"></span>
+          </div>
+          <div class="notif-header-actions">
+            <button id="testNotifBtn" type="button" class="btn ghost small notif-action-btn" title="Test notification delivery on this phone/browser">🧪 Test</button>
+            <button id="markAllReadBtn" type="button" class="btn ghost small notif-action-btn">Mark Read</button>
+            <button id="clearNotifBtn" type="button" class="btn ghost small notif-action-btn">Clear</button>
             <button id="notifCloseBtn" type="button" class="notif-mobile-close" aria-label="Close notifications">✕</button>
           </div>
         </div>
@@ -445,7 +449,10 @@ export function initNotificationBell(){
       const unread = data.unreadCount || 0;
       badge.textContent = unread > 99 ? '99+' : unread;
       badge.style.display = unread > 0 ? 'flex' : 'none';
-      if(unreadTxt) unreadTxt.textContent = unread > 0 ? `(${unread} new)` : '';
+      if(unreadTxt) {
+        unreadTxt.textContent = unread > 0 ? `${unread} new` : '';
+        unreadTxt.style.display = unread > 0 ? 'inline-block' : 'none';
+      }
 
       // Check for genuinely new incoming unread notifications to alert
       if(!isFirstFetch){
@@ -594,7 +601,7 @@ export function initNotificationBell(){
       try {
         await api('/notifications/read', { method: 'PATCH' });
         badge.style.display = 'none';
-        if(unreadTxt) unreadTxt.textContent = '';
+        if(unreadTxt) { unreadTxt.textContent = ''; unreadTxt.style.display = 'none'; }
         allNotifs.forEach(n => n.read = true);
         renderList();
         flashToast('All notifications marked as read');
@@ -614,7 +621,7 @@ export function initNotificationBell(){
         allNotifs = [];
         list.innerHTML = `<div class="empty" style="padding:28px 16px;font-size:12.5px;color:var(--text-4)">No notifications yet</div>`;
         badge.style.display='none';
-        if(unreadTxt) unreadTxt.textContent = '';
+        if(unreadTxt) { unreadTxt.textContent = ''; unreadTxt.style.display = 'none'; }
         flashToast('Notifications cleared');
       }catch(err){ flashToast(err.message, true); }
     };
